@@ -1,0 +1,11 @@
+[Unit]
+Description=QnetDTMF
+After=systemd-user-session.service
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/qndtmf
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
