@@ -54,7 +54,7 @@
 #define CFG_DIR "/usr/local/etc"
 #endif
 
-const std::string GW_VERSION("QnetGateway-10414");
+const std::string GW_VERSION("ICOMGateway-20202");
 
 int CQnetGateway::FindIndex(const int i) const
 {
@@ -251,12 +251,10 @@ bool CQnetGateway::ReadConfig(char *cfgFile)
 		else
 		{
 			printf("Found Module: %s = '%s'\n", path.c_str(), type.c_str());
-			if      (0 == type.compare("dvap"))       { Rptr.mod[m].package_version.assign(GW_VERSION+".DVAP"); }
-			else if (0 == type.compare("dvrptr"))     { Rptr.mod[m].package_version.assign(GW_VERSION+".DVRPTR"); }
-			else if (0 == type.compare("mmdvmhost"))  { Rptr.mod[m].package_version.assign(GW_VERSION+".Relay"); }
-			else if (0 == type.compare("mmdvmmodem")) { Rptr.mod[m].package_version.assign(GW_VERSION+".Modem"); }
-			else if (0 == type.compare("itap"))       { Rptr.mod[m].package_version.assign(GW_VERSION+".ITAP"); }
-			else if (0 == type.compare("thumbdv"))    { Rptr.mod[m].package_version.assign(GW_VERSION+".ThumbDV"); }
+			if      (0 == type.compare("icom"))
+			{
+				Rptr.mod[m].package_version.assign(GW_VERSION);
+			}
 			else
 			{
 				printf("module type '%s' is invalid\n", type.c_str());
@@ -274,18 +272,17 @@ bool CQnetGateway::ReadConfig(char *cfgFile)
 					rx_freq = Rptr.mod[m].frequency;
 				Rptr.mod[m].offset = rx_freq - Rptr.mod[m].frequency;
 			}
-			else if (cfg.KeyExists(path+"frequency"))
-			{
-				cfg.GetValue(path+"frequency", type, Rptr.mod[m].frequency, 0.0, 1.0E9);
-				Rptr.mod[m].offset = 0.0;
-			}
 			else
 			{
 				Rptr.mod[m].frequency = Rptr.mod[m].offset = 0.0;
 			}
+			cfg.GetValue("gateway_latitude", estr, Rptr.mod[m].latitude, -90.0, 90.0);
+			cfg.GetValue("gateway_longitude", estr, Rptr.mod[m].longitude, -180.0, 180.0);
+			cfg.GetValue("gateway_desc1", estr, Rptr.mod[m].desc1, 0, 20);
+			cfg.GetValue("gateway_desc2", estr, Rptr.mod[m].desc2, 0, 20);
+			cfg.GetValue("gateway_url", estr, Rptr.mod[m].url, 0, 80);
 			cfg.GetValue(path+"range", type, Rptr.mod[m].range, 0.0, 1609344.0);
 			cfg.GetValue(path+"agl", type, Rptr.mod[m].agl, 0.0, 1000.0);
-			cfg.GetValue(path+"is_hf", type, IS_HF[m]);
 		}
 	}
 	if (! (Rptr.mod[0].defined || Rptr.mod[1].defined || Rptr.mod[2].defined))
@@ -304,18 +301,7 @@ bool CQnetGateway::ReadConfig(char *cfgFile)
 	cfg.GetValue(path+"send_qrgs_maps", estr, GATEWAY_SEND_QRGS_MAP);
 	cfg.GetValue(path+"tolink", estr, tolink, 1, FILENAME_MAX);
 	cfg.GetValue(path+"fromremote", estr, fromremote, 1, FILENAME_MAX);
-			cfg.GetValue(path+"torelay", estr, torelay, 1, FILENAME_MAX);
-	for (int m=0; m<3; m++)
-	{
-		if (Rptr.mod[m].defined)
-		{
-			cfg.GetValue(path+"latitude", estr, Rptr.mod[m].latitude, -90.0, 90.0);
-			cfg.GetValue(path+"longitude", estr, Rptr.mod[m].longitude, -180.0, 180.0);
-			cfg.GetValue(path+"desc1", estr, Rptr.mod[m].desc1, 0, 20);
-			cfg.GetValue(path+"desc2", estr, Rptr.mod[m].desc2, 0, 20);
-			cfg.GetValue(path+"url", estr, Rptr.mod[m].url, 0, 80);
-		}
-	}
+	cfg.GetValue(path+"torelay", estr, torelay, 1, FILENAME_MAX);
 	path.append("find_route");
 	if (cfg.KeyExists(path))
 	{
@@ -1055,7 +1041,7 @@ void CQnetGateway::ProcessOutGoingSD(const SDSVT &dsvt, const int i)
 
 			int x = FindIndex(i);
 			if (x >= 0)
-				ii[x]->sendHeardWithTXMsg(band_txt[i].mycall, band_txt[i].sfx, band_txt[i].urcall, band_txt[i].rpt1, band_txt[i].rpt2, band_txt[i].flags[0], band_txt[i].flags[1], band_txt[i].flags[2], IS_HF[i] ? "" : band_txt[i].dest_rptr, band_txt[i].txt);
+				ii[x]->sendHeardWithTXMsg(band_txt[i].mycall, band_txt[i].sfx, band_txt[i].urcall, band_txt[i].rpt1, band_txt[i].rpt2, band_txt[i].flags[0], band_txt[i].flags[1], band_txt[i].flags[2], band_txt[i].dest_rptr, band_txt[i].txt);
 			band_txt[i].sent_key_on_msg = true;
 		}
 		// this is the second of a two voice-frame pair
@@ -1113,7 +1099,7 @@ void CQnetGateway::ProcessOutGoingSD(const SDSVT &dsvt, const int i)
 
 					int x = FindIndex(i);
 					if (x >= 0)
-						ii[x]->sendHeardWithTXMsg(band_txt[i].mycall, band_txt[i].sfx, band_txt[i].urcall, band_txt[i].rpt1, band_txt[i].rpt2, band_txt[i].flags[0], band_txt[i].flags[1], band_txt[i].flags[2], IS_HF[i] ? "" : band_txt[i].dest_rptr, (const char *)sd.message);
+						ii[x]->sendHeardWithTXMsg(band_txt[i].mycall, band_txt[i].sfx, band_txt[i].urcall, band_txt[i].rpt1, band_txt[i].rpt2, band_txt[i].flags[0], band_txt[i].flags[1], band_txt[i].flags[2], band_txt[i].dest_rptr, (const char *)sd.message);
 					band_txt[i].sent_key_on_msg = true;
 				}
 				if (showLastHeard && (i < 3) && memcmp(toRptr[i].saved_hdr.hdr.sfx, "RPTR", 4) && memcmp(sd.message, "VIA SMARTGP", 11))
@@ -1860,7 +1846,7 @@ void CQnetGateway::ProcessModem(const ssize_t recvlen, SDSVT &dsvt)
 								}
 								int x = FindIndex(i);
 								if (x >= 0)
-									ii[x]->sendHeardWithTXMsg(band_txt[i].mycall, band_txt[i].sfx, band_txt[i].urcall, band_txt[i].rpt1, band_txt[i].rpt2, band_txt[i].flags[0], band_txt[i].flags[1], band_txt[i].flags[2], IS_HF[i] ? "" : band_txt[i].dest_rptr, band_txt[i].txt);
+									ii[x]->sendHeardWithTXMsg(band_txt[i].mycall, band_txt[i].sfx, band_txt[i].urcall, band_txt[i].rpt1, band_txt[i].rpt2, band_txt[i].flags[0], band_txt[i].flags[1], band_txt[i].flags[2], band_txt[i].dest_rptr, band_txt[i].txt);
 								band_txt[i].sent_key_on_msg = true;
 							}
 							// send the "key off" message, this will end up in the openquad.net Last Heard webpage.

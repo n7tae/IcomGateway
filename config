@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Copyright (c) 2019-2020 by Thomas A. Early N7TAE
+# Copyright (c) 2022 by Thomas A. Early N7TAE
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -312,12 +312,14 @@ GateMenu () {
 		echo "               Gateway/APRS Menu"
 		echo
 		echo    "     Gateway Option"
+		echo -n "ia : Icom Repeater IP Address       = "; EvaluateVar gateway_icom_ip{,_d}
+		echo -n "ip : Icom Repeater IP Port          = "; EvaluateVar gateway_icom_port{,_d}
 		if [ -n "$em" ]; then
-			echo -n "r  : Regenerate Headers             = "; EvaluateVar gateway_header_regen{,_d}
-			echo -n "s  : Send IRC network Module Info   = "; EvaluateVar gateway_send_qrgs_maps{,_d}
-			echo -n "i  : IRC TCP local network address  = "; EvaluateVar gateway_local_irc_ip{,_d}
-			echo -n "a  : G2 port address                = "; EvaluateVar gateway_ip{,_d}
-			echo -n "p  : G2 port number                 = "; EvaluateVar gateway_port{,_d}
+			echo -n "re : Regenerate Headers             = "; EvaluateVar gateway_header_regen{,_d}
+			echo -n "si : Send IRC network Module Info   = "; EvaluateVar gateway_send_qrgs_maps{,_d}
+			echo -n "ta : IRC TCP local network address  = "; EvaluateVar gateway_local_irc_ip{,_d}
+			echo -n "ga : G2 port address                = "; EvaluateVar gateway_ip{,_d}
+			echo -n "gp : G2 port number                 = "; EvaluateVar gateway_port{,_d}
 		fi
 		echo -n "la : Latitude (-90.0 to 90.0)       = "; EvaluateVar gateway_latitude{,_d}
 		echo -n "lo : Longitude (-180.0 to 180.0)    = "; EvaluateVar gateway_longitude{,_d}
@@ -338,11 +340,13 @@ GateMenu () {
 		fi
 		EndMenu
 
-		if   [[ "$key" == r*  ]]; then SetBooleanValue gateway_header_regen "$value"
-		elif [[ "$key" == s*  ]]; then SetBooleanValue gateway_send_qrgs_maps "$value"
-		elif [[ "$key" == i*  ]]; then gateway_local_irc_ip="$value"
-		elif [[ "$key" == a*  ]]; then gateway_ip="$value"
-		elif [[ "$key" == p*  ]]; then gateway_port="$value"
+		if   [[ "$key" == ia* ]]; then gateway_icom_ip="$value"
+		elif [[ "$key" == ip* ]]; then gateway_icom_port="$value"
+		elif [[ "$key" == re* ]]; then SetBooleanValue gateway_header_regen "$value"
+		elif [[ "$key" == si* ]]; then SetBooleanValue gateway_send_qrgs_maps "$value"
+		elif [[ "$key" == ta* ]]; then gateway_local_irc_ip="$value"
+		elif [[ "$key" == ga* ]]; then gateway_ip="$value"
+		elif [[ "$key" == gp* ]]; then gateway_port="$value"
 		elif [[ "$key" == la* ]]; then gateway_latitude="$value"
 		elif [[ "$key" == lo* ]]; then gateway_longitude="$value"
 		elif [[ "$key" == d1* ]]; then gateway_desc1="${value:0:20}"
@@ -355,11 +359,13 @@ GateMenu () {
 		elif [[ "$key" == k*  ]]; then aprs_interval="$value"
 		elif [[ "$key" == af* ]]; then aprs_filter="$value"
 		elif [[ "$key" == u*  ]]; then
-			if   [[ "$value" == r*  ]]; then unset gateway_header_regen
-			elif [[ "$value" == s*  ]]; then unset gateway_send_qrgs_maps
-			elif [[ "$value" == i*  ]]; then unset gateway_local_irc_ip
-			elif [[ "$value" == a*  ]]; then unset gateway_ip
-			elif [[ "$value" == p*  ]]; then unset gateway_port
+			if   [[ "$value" == ia* ]]; then unset gateway_icom_ip
+			elif [[ "$value" == ip* ]]; then unset gateway_icom_port
+			elif [[ "$value" == re* ]]; then unset gateway_header_regen
+			elif [[ "$value" == si* ]]; then unset gateway_send_qrgs_maps
+			elif [[ "$value" == ta* ]]; then unset gateway_local_irc_ip
+			elif [[ "$value" == ga* ]]; then unset gateway_ip
+			elif [[ "$value" == gp* ]]; then unset gateway_port
 			elif [[ "$value" == la* ]]; then unset gateway_latitude
 			elif [[ "$value" == lo* ]]; then unset gateway_longitude
 			elif [[ "$value" == d1* ]]; then unset gateway_desc1
@@ -385,97 +391,28 @@ ModuleMenu () {
 	else
 		nmod='c'
 	fi
-	clear
-	if [ -z ${!mod} ]; then
-		echo
-		echo "               Select a Module type"
-		echo
-		echo "1 : DVAP Dongle"
-		echo "2 : DVRPTR V1"
-		echo "3 : ICOM Terminal and Access Point Mode"
-		echo "4 : MMDVM Modem (like DVMega or ZUMspot) D-Star ONLY!"
-		echo "5 : MMDVMHost or DStarRepeater Sytem"
-		echo
-		echo "    Anything else will return without selecting"
-		echo
-		echo -n "Select Module Type : "
-		read key unused
-		if   [[ "$key" == 1 ]]; then eval ${mod}=dvap
-		elif [[ "$key" == 2 ]]; then eval ${mod}=dvrptr
-		elif [[ "$key" == 3 ]]; then eval ${mod}=itap
-		elif [[ "$key" == 4 ]]; then eval ${mod}=mmdvmmodem
-		elif [[ "$key" == 5 ]]; then eval ${mod}=mmdvmhost
-		else return
-		fi
-	fi
+	eval ${mod}=icom
 	key=''
 	while [[ "$key" != q* ]]; do
 		clear
 		echo
 		echo "               Module ${1^^} Menu ($mod=${!mod})"
 		echo
+		echo -n "tx : TX Frequency in MHz                          = "; EvaluateVar {${mod},module_x}_tx_frequency
+		echo -n "rx : RX Frequency in MHz                          = "; EvaluateVar {${mod},module_x}_rx_frequency
 		echo -n "ls : Link at startup (must be 8 chars)            = "; EvaluateVar {${mod},module_x}_link_at_start
 		if [ -n "$em" ]; then
-			echo -n "ar : Auto relink in the case of a timeout         = "; EvaluateVar {${mod},module_x}_auto_link
+			echo -n "al : Automatic re-link on loss of link            = "; EvaluateVar {${mod},module_x}_auto_link
 		fi
 		echo -n "cs : Callsign (uses ircddb_login if empty)        = "; EvaluateVar {${mod},module_x}_callsign
 		echo -n "ra : Range (in meters, 1 mile=1609.344 meters)    = "; EvaluateVar {${mod},module_x}_range
 		echo -n "ag : Above ground level (in meters)               = "; EvaluateVar {${mod},module_x}_agl
 		if [ -n "$em" ]; then
+			echo -n "ip : IP Address                                   = "; EvaluateVar {${mod},module_x}_ip
+			echo -n "po : Port number                                  = "; EvaluateVar {${mod},module_x}_port
 			echo -n "in : Inactivity for this many minutes unlinks     = "; EvaluateVar {${mod},module_x}_inactivity
 			echo -n "ac : Send acknowledgment on each transmission     = "; EvaluateVar {${mod},module_x}_acknowledge
 			echo -n "ad : acknowledgment delay (in msec)               = "; EvaluateVar {${mod},module_x}_ack_delay
-			echo -n "pw : in msec, packet wait time (test for timeout) = "; EvaluateVar {${mod},module_x}_packet_wait
-			echo -n "hf : is an HF module                              = "; EvaluateVar {${mod},module_x}_is_hf
-		fi
-		if [[ "${!mod}" == 'dvap' ]]; then
-			echo -n "fr : Frequency in MHz                             = "; EvaluateVar {${mod},dvap}_frequency
-			echo -n "of : Offset in Hz                                 = "; EvaluateVar {${mod},dvap}_offset
-			echo -n "po : Power (in dBm from -12 to 10)                = "; EvaluateVar {${mod},dvap}_power
-			echo -n "sq : Squelch (in dBm from -128 to -45)            = "; EvaluateVar {${mod},dvap}_squelch
-			echo    "     You MUST specify either a serial number or a device path!"
-			echo -n "dv : Device path (/dev/ttyUSBx)                   = "; EvaluateVar {${mod},dvap}_device
-			echo -n "sn : Serial # (visible through the case)          = "; EvaluateVar {${mod},dvap}_serial_number
-		elif [[ "${!mod}" == 'dvrptr' ]]; then
-			echo -n "tx : Transmit frequency, in MHz                   = "; EvaluateVar {${mod},dvrptr}_tx_frequency
-			echo -n "rx : Receive  frequency, in MHz                   = "; EvaluateVar {${mod},dvrtpr}_rx_frequency
-			echo -n "sn : Serial # (run once and look in log)          = "; EvaluateVar {${mod},dvrptr}_serial_number
-			echo -n "rn : Callsign to turn RF on                       = "; EvaluateVar {${mod},dvrptr}_rf_on
-			echo -n "rf : Callsign to turn RF off                      = "; EvaluateVar {${mod},dvrptr}_rf_off
-			echo -n "rl : Receiver level                               = "; EvaluateVar {${mod},dvrptr}_rx_level
-			echo -n "du : Is duplex                                    = "; EvaluateVar {${mod},dvrptr}_duplex
-			echo -n "td : Transmitter delay (in msec) for tx/rx switch = "; EvaluateVar {${mod},dvrptr}_tx_delay
-			echo -n "rq : # of 2 sec interval before system reset      = "; EvaluateVar {${mod},dvrptr}_rqst_count
-			echo -n "ir : Inverse phase of receiver                    = "; EvaluateVar {${mod},dvrptr}_rx_invert
-			echo -n "it : Inverse phase of transmitter                 = "; EvaluateVar {${mod},dvrptr}_tx_invert
-		elif [[ "${!mod}" == 'itap' ]]; then
-			echo -n "fr : Frequency in MHz                             = "; EvaluateVar {${mod},itap}_frequency
-			echo -n "dv : USB device path                              = "; EvaluateVar {${mod},itap}_device
-			echo -n "ap : Set to true if using Access Point Mode       = "; EvaluateVar {${mod},itap}_ap_mode
-		elif [[ "${!mod}" == 'mmdvmhost' ]]; then
-			echo -n "dr : System is DStarRepeater, and _NOT_ MMDVMHost = "; EvaluateVar {${mod},mmdvmhost}_is_dstarrepeater
-			echo -n "ip : bound IP address for communication to modem  = "; EvaluateVar {${mod},mmdvmhost}_internal_ip
-			echo -n "ti : IP of MMDVMHost or DStarRepeater             = "; EvaluateVar {${mod},mmdvmhost}_target_ip
-			echo -n "gp : Gateway port number                          = "; EvaluateVar {${mod},mmdvmhost}_gateway_port
-			echo -n "lp : Local port number                            = "; EvaluateVar {${mod},mmdvmhost}_local_port
-			echo -n "tx : Transmit frequency, in MHz                   = "; EvaluateVar {${mod},mmdvmhost}_tx_frequency
-			echo -n "rx : Receive  frequency, in MHz                   = "; EvaluateVar {${mod},mmdvmhost}_rx_frequency
-		elif [[ "${!mod}" == 'mmdvmmodem' ]]; then
-			echo -n "dv : Device path                                  = "; EvaluateVar {${mod},mmdvmmodem}_device
-			echo -n "tx : Transmit frequency, in MHz                   = "; EvaluateVar {${mod},mmdvmmodem}_tx_frequency
-			echo -n "rx : Receive  frequency, in MHz                   = "; EvaluateVar {${mod},mmdvmmodem}_rx_frequency
-			echo -n "to : Transmit offset,    in MHz                   = "; EvaluateVar {${mod},mmdvmmodem}_tx_offset
-			echo -n "r0 : Receive  offset,    in MHz                   = "; EvaluateVar {${mod},mmdvmmodem}_rx_offset
-			echo -n "du : Is duplex                                    = "; EvaluateVar {${mod},mmdvmmodem}_duplex
-			if [ -n "$em" ]; then
-				echo -n "it : Transmit invert                              = "; EvaluateVar {${mod},mmdvmmodem}_tx_invert
-				echo -n "ir : Receive  invert                              = "; EvaluateVar {${mod},mmdvmmodem}_rx_invert
-				echo -n "pi : PTT invert                                   = "; EvaluateVar {${mod},mmdvmmodem}_ptt_invert
-				echo -n "td : Transmit delay (in msec) for tx/rx switch    = "; EvaluateVar {${mod},mmdvmmodem}_tx_delay
-				echo -n "tl : Transmit level (0-255)                       = "; EvaluateVar {${mod},mmdvmmodem}_tx_level
-				echo -n "rl : Receive  level (0-255)                       = "; EvaluateVar {${mod},mmdvmmodem}_rx_level
-				echo -n "lv : RF level (0-255)                             = "; EvaluateVar {${mod},mmdvmmodem}_rf_level
-			fi
 		fi
 		echo    "xx : Delete this module"
 		EndMenu
@@ -485,88 +422,30 @@ ModuleMenu () {
 			eval ${mod}_link_at_start="'${value^^}'"
 		elif [[ "$key" == ac* ]]; then SetBooleanValue ${mod}_acknowledge "$value"
 		elif [[ "$key" == ad* ]]; then eval ${mod}_ack_delay="$value"
-		elif [[ "$key" == ap* ]]; then SetBooleanValue ${mod}_ap_mode "$value"
 		elif [[ "$key" == ag* ]]; then eval ${mod}_agl="$value"
-		elif [[ "$key" == ar* ]]; then SetBooleanValue ${mod}_auto_link "$value"
+		elif [[ "$key" == al* ]]; then SetBooleanValue ${mod}_auto_link "$value"
 		elif [[ "$key" == cs* ]]; then eval ${mod}_callsign="${value^^}"
-		elif [[ "$key" == dr* ]]; then SetBooleanValue ${mod}_is_dstarrepeater
-		elif [[ "$key" == du* ]]; then SetBooleanValue ${mod}_duplex "$value"
-		elif [[ "$key" == dv* ]]; then
-			eval ${mod}_device="$value"
-			unset ${mod}_serial_number
-		elif [[ "$key" == fr* ]]; then eval ${mod}_frequency="$value"
-		elif [[ "$key" == gp* ]]; then eval ${mod}_gateway_port="$value"
-		elif [[ "$key" == hf* ]]; then SetBooleanValue ${mod}_is_hf "$value"
-		elif [[ "$key" == in* ]]; then eval ${mod}_inactivity="$value"
-		elif [[ "$key" == ir* ]]; then SetBooleanValue ${mod}_rx_invert "$value"
-		elif [[ "$key" == ip* ]]; then eval ${mod}_internal_ip="$value"
-		elif [[ "$key" == it* ]]; then SetBooleanValue ${mod}_tx_invert "$value"
-		elif [[ "$key" == lp* ]]; then eval ${mod}_local_port="$value"
-		elif [[ "$key" == lv* ]]; then eval ${mod}_rf_level="$value"
-		elif [[ "$key" == of* ]]; then eval ${mod}_offset="$value"
-		elif [[ "$key" == pi* ]]; then SetBooleanValue ${mod}_ptt_invert="$value"
-		elif [[ "$key" == po* ]]; then eval ${mod}_power="$value"
-		elif [[ "$key" == pw* ]]; then eval ${mod}_packet_wait="$value"
-		elif [[ "$key" == ra* ]]; then eval ${mod}_range="$value"
-		elif [[ "$key" == rf* ]]; then eval ${mod}_rf_off="$value"
-		elif [[ "$key" == rl* ]]; then eval ${mod}_rx_level="$value"
-		elif [[ "$key" == rn* ]]; then eval ${mod}_rf_on="$value"
-		elif [[ "$key" == ro* ]]; then eval ${mod}_rx_offset="$value"
-		elif [[ "$key" == rq* ]]; then eval ${mod}_rqst_count="$value"
-		elif [[ "$key" == rx* ]]; then eval ${mod}_rx_frequency="$value"
-		elif [[ "$key" == sn* ]]; then
-			eval ${mod}_serial_number="${value^^}"
-			unset {$mod}_device
-		elif [[ "$key" == sq* ]]; then eval ${mod}_squelch="$value"
-		elif [[ "$key" == td* ]]; then eval ${mod}_tx_delay="$value"
-		elif [[ "$key" == ti* ]]; then eval ${mod}_target_ip="$value"
-		elif [[ "$key" == tl* ]]; then eval ${mod}_tx_level="$value"
-		elif [[ "$key" == to* ]]; then eval ${mod}_tx_offset="$value"
 		elif [[ "$key" == tx* ]]; then eval ${mod}_tx_frequency="$value"
+		elif [[ "$key" == in* ]]; then eval ${mod}_inactivity="$value"
+		elif [[ "$key" == rx* ]]; then eval ${mod}_rx_frequency="$value"
+		elif [[ "$key" == ra* ]]; then eval ${mod}_range="$value"
 		elif [[ "$key" == xx* ]]; then
-			unset ${mod}_{link_at_start,callsign,{,rx_,tx_}frequency,offset,range,agl}
-			unset ${mod}_{inactivity,packet_wait,acknowledge,ack_delay,power,squelch,serial_number,rf_o{n,ff},{rx,tx,rf}_level}
-			unset ${mod}_{duplex,tx_delay,rqst_count,{tx,rx,ptt}_invert,device,internal_ip,target_ip,{gateway,local}_port}
-			unset ${mod}_{tx_offset,rx_offset,auto_link,ap_mode}
+			unset ${mod}_{link_at_start,callsign,offset,range,agl,ip,port}
+			unset ${mod}_{inactivity,packet_wait,acknowledge,ack_delay,auto_link}
 			unset ${mod}
 			return
 		elif [[ "$key" == u* ]]; then
 			if   [[ "$value" == ac* ]]; then unset ${mod}_acknowledge
 			elif [[ "$value" == ad* ]]; then unset ${mod}_ack_delay
-			elif [[ "$value" == ap* ]]; then unset ${mod}_ap_mode
-			elif [[ "$value" == ar* ]]; then unset ${mod}_auto_link
 			elif [[ "$value" == ag* ]]; then unset ${mod}_agl
+			elif [[ "$value" == al* ]]; then unset ${mod}_auto_link
 			elif [[ "$value" == cs* ]]; then unset ${mod}_callsign
-			elif [[ "$value" == dr* ]]; then unset ${mod}_is_dstarrepeater
-			elif [[ "$value" == du* ]]; then unset ${mod}_duplex
-			elif [[ "$value" == dv* ]]; then unset ${mod}_device
-			elif [[ "$value" == fr* ]]; then unset ${mod}_frequency
-			elif [[ "$value" == gp* ]]; then unset ${mod}_gateway_port
+			elif [[ "$value" == tx* ]]; then unset ${mod}_tx_frequency
 			elif [[ "$value" == in* ]]; then unset ${mod}_inactivity
-			elif [[ "$value" == ir* ]]; then unset ${mod}_rx_invert
-			elif [[ "$value" == ip* ]]; then unset ${mod}_internal_ip
-			elif [[ "$value" == it* ]]; then unset ${mod}_tx_invert
-			elif [[ "$value" == lp* ]]; then unset ${mod}_local_port
 			elif [[ "$value" == ls* ]]; then unset ${mod}_link_at_start
-			elif [[ "$value" == lv* ]]; then unset ${mod}_rf_level
-			elif [[ "$value" == of* ]]; then unset ${mod}_offset
-			elif [[ "$value" == pi* ]]; then unset ${mod}_ppt_invert
-			elif [[ "$value" == po* ]]; then unset ${mod}_power
+			elif [[ "$value" == rx* ]]; then unset ${mod}_rx_frequency
 			elif [[ "$value" == pw* ]]; then unset ${mod}_packet_wait
 			elif [[ "$value" == ra* ]]; then unset ${mod}_range
-			elif [[ "$value" == rf* ]]; then unset ${mod}_rf_off
-			elif [[ "$value" == rl* ]]; then unset ${mod}_rx_level
-			elif [[ "$value" == rn* ]]; then unset ${mod}_rf_on
-			elif [[ "$value" == ro* ]]; then unset ${mod}_rx_offset
-			elif [[ "$value" == rq* ]]; then unset ${mod}_rqst_count
-			elif [[ "$value" == rx* ]]; then unset ${mod}_rx_frequency
-			elif [[ "$value" == sn* ]]; then unset ${mod}_serial_number
-			elif [[ "$value" == sq* ]]; then unset ${mod}_squelch
-			elif [[ "$value" == td* ]]; then unset ${mod}_tx_delay
-			elif [[ "$value" == ti* ]]; then unset ${mod}_target_ip
-			elif [[ "$value" == tl* ]]; then unset ${mod}_tx_level
-			elif [[ "$value" == to* ]]; then unset ${mod}_tx_offset
-			elif [[ "$value" == tx* ]]; then unset ${mod}_tx_frequency
 			fi
 		fi
 	done
@@ -599,59 +478,15 @@ WriteCFGFile () {
 			q=${p}_link_at_start;  [ -z ${!q+x} ] || echo "${q}='${!q}'" >> $outFile
 			q=${p}_auto_link;      [ -z ${!q+x} ] || echo "${q}=${!q}"   >> $outFile
 			q=${p}_callsign;       [ -z ${!q+x} ] || echo "${q}='${!q}'" >> $outFile
-			q=${p}_offset;         [ -z ${!q+x} ] || echo "${q}=${!q}"   >> $outFile
+			q=${p}_tx_frequency;   [ -z ${!q+x} ] || echo "${q}=${!q}"   >> $outFile
+			q=${p}_rx_frequency;   [ -z ${!q+x} ] || echo "${q}=${!q}"   >> $outFile
 			q=${p}_range;          [ -z ${!q+x} ] || echo "${q}=${!q}"   >> $outFile
 			q=${p}_agl;            [ -z ${!q+x} ] || echo "${q}=${!q}"   >> $outFile
 			q=${p}_inactivity;     [ -z ${!q+x} ] || echo "${q}=${!q}"   >> $outFile
 			q=${p}_packet_wait;    [ -z ${!q+x} ] || echo "${q}=${!q}"   >> $outFile
 			q=${p}_acknowledge;    [ -z ${!q+x} ] || echo "${q}=${!q}"   >> $outFile
 			q=${p}_ack_delay;      [ -z ${!q+x} ] || echo "${q}=${!q}"   >> $outFile
-			q=${p}_is_hf;          [ -z ${!q+x} ] || echo "${q}=${!q}"   >> $outFile
-			if [[ "${!p}" == "dvap" ]]; then
-				q=${p}_frequency;     [ -z ${!q+x} ] || echo "${q}=${!q}"   >> $outFile
-				q=${p}_power;         [ -z ${!q+x} ] || echo "${q}=${!q}"   >> $outFile
-				q=${p}_squelch;       [ -z ${!q+x} ] || echo "${q}=${!q}"   >> $outFile
-				q=${p}_serial_number; [ -z ${!q+x} ] || echo "${q}='${!q}'" >> $outFile
-				q=${p}_device;        [ -z ${!q+x} ] || echo "${q}='${!q}'" >> $outFile
-			elif [[ "${!p}" == "dvrptr" ]]; then
-				q=${p}_tx_frequency;  [ -z ${!q+x} ] || echo "${q}=${!q}"   >> $outFile
-				q=${p}_rx_frequency;  [ -z ${!q+x} ] || echo "${q}=${!q}"   >> $outFile
-				q=${p}_serial_number; [ -z ${!q+x} ] || echo "${q}='${!q}'" >> $outFile
-				q=${p}_rf_on;         [ -z ${!q+x} ] || echo "${q}='${!q}'" >> $outFile
-				q=${p}_rf_off;        [ -z ${!q+x} ] || echo "${q}='${!q}'" >> $outFile
-				q=${p}_rx_level;      [ -z ${!q+x} ] || echo "${q}=${!q}"   >> $outFile
-				q=${p}_duplex;        [ -z ${!q+x} ] || echo "${q}=${!q}"   >> $outFile
-				q=${p}_tx_delay;      [ -z ${!q+x} ] || echo "${q}=${!q}"   >> $outFile
-				q=${p}_rqst_count;    [ -z ${!q+x} ] || echo "${q}=${!q}"   >> $outFile
-				q=${p}_tx_invert;     [ -z ${!q+x} ] || echo "${q}=${!q}"   >> $outFile
-				q=${p}_rx_invert;     [ -z ${!q+x} ] || echo "${q}=${!q}"   >> $outFile
-			elif [[ "${!p}" == "itap" ]]; then
-				q=${p}_frequency; [ -z ${!q+x} ] || echo "${q}=${!q}"   >> $outFile
-				q=${p}_device;    [ -z ${!q+x} ] || echo "${q}=${!q}"   >> $outFile
-				q=${p}_ap_mode;   [ -z ${!q+x} ] || echo "${q}=${!q}"   >> $outFile
-			elif [[ "${!p}" == "mmdvmhost" ]]; then
-				q=${p}_is_dstarrepeater;  [ -z ${!q+x} ] || echo "${q}=${!q}"   >> $outFile
-				q=${p}_tx_frequency;      [ -z ${!q+x} ] || echo "${q}=${!q}"   >> $outFile
-				q=${p}_rx_frequency;      [ -z ${!q+x} ] || echo "${q}=${!q}"   >> $outFile
-				q=${p}_internal_ip;       [ -z ${!q+x} ] || echo "${q}='${!q}'" >> $outFile
-				q=${p}_target_ip;         [ -z ${!q+x} ] || echo "${q}='${!q}'" >> $outFile
-				q=${p}_gateway_port;      [ -z ${!q+x} ] || echo "${q}=${!q}"   >> $outFile
-				q=${p}_local_port;        [ -z ${!q+x} ] || echo "${q}=${!q}"   >> $outFile
-			elif [[ "${!p}" == "mmdvmmodem" ]]; then
-				q=${p}_tx_frequency;  [ -z ${!q+x} ] || echo "${q}=${!q}"   >> $outFile
-				q=${p}_rx_frequency;  [ -z ${!q+x} ] || echo "${q}=${!q}"   >> $outFile
-				q=${p}_tx_offset;     [ -z ${!q+x} ] || echo "${q}=${!q}"   >> $outFile
-				q=${p}_rx_offset;     [ -z ${!q+x} ] || echo "${q}=${!q}"   >> $outFile
-				q=${p}_duplex;        [ -z ${!q+x} ] || echo "${q}=${!q}"   >> $outFile
-				q=${p}_rx_level;      [ -z ${!q+x} ] || echo "${q}=${!q}"   >> $outFile
-				q=${p}_tx_level;      [ -z ${!q+x} ] || echo "${q}=${!q}"   >> $outFile
-				q=${p}_rf_level;      [ -z ${!q+x} ] || echo "${q}=${!q}"   >> $outFile
-				q=${p}_tx_invert;     [ -z ${!q+x} ] || echo "${q}=${!q}"   >> $outFile
-				q=${p}_rx_invert;     [ -z ${!q+x} ] || echo "${q}=${!q}"   >> $outFile
-				q=${p}_ptt_invert;    [ -z ${!q+x} ] || echo "${q}=${!q}"   >> $outFile
-				q=${p}_tx_delay;      [ -z ${!q+x} ] || echo "${q}=${!q}"   >> $outFile
-				q=${p}_device;        [ -z ${!q+x} ] || echo "${q}=${!q}"   >> $outFile
-			fi
+			q=${p}_frequency;      [ -z ${!q+x} ] || echo "${q}=${!q}"   >> $outFile
 		fi
 	done
 	# gateway_section
@@ -666,6 +501,8 @@ WriteCFGFile () {
 	[ -z "${gateway_desc2+x}"          ] || echo "gateway_desc2='${gateway_desc2}'"                 >> $outFile
 	[ -z "${gateway_url+x}"            ] || echo "gateway_url='${gateway_url}'"                     >> $outFile
 	[ -z "${gateway_find_route+x}"     ] || echo "gateway_find_route='${gateway_find_route}'"       >> $outFile
+	[ -z "${gateway_icom_ip+x}"        ] || echo "gateway_icom_ip='${gateway_icom_ip}'"             >> $outFile
+	[ -z "${gateway_icom_port+x}"      ] || echo "gateway_icom_port=${gateway_icom_port}"           >> $outFile
 	# arps_ section
 	[ -z "${aprs_enable+x}"   ] || echo "aprs_enable=${aprs_enable}"     >> $outFile
 	[ -z "${aprs_host+x}"     ] || echo "aprs_host='${aprs_host}'"       >> $outFile
@@ -742,7 +579,7 @@ while [[ "$ans" != q* ]]
 do
 	clear
 	echo
-	echo "           QnConfig Main Menu V#210708"
+	echo "           IcomGateway Config Main Menu V#20202"
 	echo
 	echo -n "a : Module A                - "; if [ -z $module_a ]; then echo "<EMPTY>"; else echo "${module_a^^}"; fi
 	echo -n "b : Module B                - "; if [ -z $module_b ]; then echo "<EMPTY>"; else echo "${module_b^^}"; fi

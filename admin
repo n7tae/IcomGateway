@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Copyright (c) 2019 by Thomas A. Early N7TAE
+# Copyright (c) 2022 by Thomas A. Early N7TAE
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -21,108 +21,26 @@ ControlC () {
 	echo "caught SIGINT"
 }
 
-# arguments "un" exe count module0 module1 module2
-#             1   2    3      4       5      6
-InstallComponent () {
-	if [ $3 -eq 1 ]; then
-		sudo make ${1}install$2
-	else
-		sudo make MODULE=$4 ${1}install$2
-		sudo make MODULE=$5 ${1}install$2
-		if [ $3 -eq 3 ]; then
-			sudo make MODULE=$6 ${1}install$2
-		fi
-	fi
-}
-
-InstallMMDVMHosts () {
-	if [ $nmmdvm -gt 0 ]; then
-		local n
-		if [ -z ${1} ]; then
-			if [ ! -d ../MMDVMHost ]; then
-				echo "This installation probabaly will not work because MMDVMHost can't be found!"
-				read -p "<Enter to continue"
-			fi
-			n=$(getconf _NPROCESSORS_ONLN)
-			echo "Detected $n processors for make"
-			for dir in $MMPATH $DMRPATH $YSFPATH $APRSPATH; do
-				if [ -d $dir ]; then
-					pushd $dir
-					make -j$n
-					popd
-				fi
-			done
-		fi
-		if [ -e ${MMPATH}/MMDVMHost ]; then
-			InstallComponent "$1" mmdvm $nmmdvm ${ammdvm[*]}
-		fi
-		if [ -e ${DMRPATH}/DMRGateway ]; then
-			InstallComponent "$1" dmr $nmmdvm ${ammdvm[*]}
-		fi
-		if [ -e ${YSFPATH}/YSFGateway ]; then
-			InstallComponent "$1" ysf $nmmdvm ${ammdvm[*]}
-		fi
-		if [ -e ${APRSPATH}/APRSGateway ]; then
-			sudo make ${1}installaprs
-		fi
-	fi
-}
-
 InstallSystem () {
 	local n
 	if [ -z ${1} ]; then
 		n=$( grep '^processor' /proc/cpuinfo | wc -l )
 		echo "Detected $n processors for make"
-		make base -j$n
+		make -j$n
 	fi
-	sudo make ${1}installbase
-	if [ $ndvap -gt 0 ]; then
-		if [ -z ${1} ]; then
-			make qndvap -j$n
-		fi
-		InstallComponent "$1" dvap $ndvap ${advap[*]}
-	fi
-	if [ $ndvrptr -gt 0 ]; then
-		if [ -z ${1} ]; then
-			make qndvrptr -j$n
-		fi
-		InstallComponent "$1" dvrptr $ndvrptr ${advrptr[*]}
-	fi
-	if [ $nitap -gt 0 ]; then
-		if [ -z ${1} ]; then
-			make qnitap -j$n
-		fi
-		InstallComponent "$1" itap $nitap ${aitap[*]}
-	fi
-	if [ $nmmdvm -gt 0 ]; then
-		if [ -z ${1} ]; then
-			make qnrelay -j$n
-		fi
-		InstallComponent "$1" relay $nmmdvm ${ammdvm[*]}
-	fi
-	if [ $nmodem -gt 0 ]; then
-		if [ -z ${1} ]; then
-			make qnmodem -j$n
-		fi
-		InstallComponent "$1" modem $nmodem ${amodem[*]}
-	fi
-}
-
-GetState() {
-	local state=$( systemctl show -p ${1}State $2 )
-	echo ${state#*=}
+	sudo make ${1}install
 }
 
 BaseStatus () {
-	local LoadGate SubGate LoadLink SubLink LoadDTMF SubDTMF LoadAPRS SubAPRS
-	LoadGate=$( GetState Load qngateway )
-	SubGate=$( GetState Sub qngateway )
-	LoadLink=$( GetState Load qnlink )
-	SubLink=$( GetState Sub qnlink )
-	LoadDTMF=$( GetState Load qndtmf )
-	SubDTMF=$( GetState Sub qndtmf )
-	LoadAPRS=$( GetState Load aprsgateway )
-	SubAPRS=$( GetState Sub aprsgateway )
+	local LoadGate SubGate LoadLink SubLink LoadRelay SubRelay LoadDTMF SubDTMF
+	LoadGate=$( systemctl show -p LoadState --value qngateway )
+	SubGate=$( systemctl show -p SubState --value qngateway )
+	LoadLink=$( systemctl show -p LoadState --value qnlink )
+	SubLink=$( systemctl show -p SubState --value qnlink )
+	LoadRelay=$( systemctl show -p LoadState --value qnrelay )
+	SubRelay=$( systemctl show -p SubState --value qnrelay )
+	LoadDTMF=$( systemctl show -p LoadState --value qndtmf )
+	SubDTMF=$( systemctl show -p SubState --value qndtmf )
 	if [[ $LoadGate == 'loaded' ]]; then
 		if [[ $SubGate == 'running' ]]; then
 			GateState='running'
@@ -132,7 +50,7 @@ BaseStatus () {
 	else
 		GateState='not installed'
 	fi
-	echo "QnetGateway is $GateState"
+	echo "QetGateway is $GateState"
 	if [[ $LoadLink == 'loaded' ]]; then
 		if [[ $SubLink == 'running' ]]; then
 			LinkState='running'
@@ -142,7 +60,17 @@ BaseStatus () {
 	else
 		LinkState='not installed'
 	fi
-	echo "QnetLink is $LinkState"
+	echo "QetLink is $LinkState"
+	if [[ $LoadRelay == 'loaded' ]]; then
+		if [[ $SubRelay == 'running' ]]; then
+			RelayState='running'
+		else
+			RelayState='stopped'
+		fi
+	else
+		RelayState='not installed'
+	fi
+	echo "QetRelay is $LinkState"
 	if [[ $LoadDTMF == 'loaded' ]]; then
 		if [[ $SubDTMF == 'running' ]]; then
 			DTMFState='running'
@@ -153,116 +81,15 @@ BaseStatus () {
 		DTMFState='not installed'
 	fi
 	echo "DTMF is $DTMFState"
-	if [ -d $APRSPATH ]; then
-		if [[ $LoadAPRS == 'loaded' ]]; then
-			if [[ $SubAPRS == 'running' ]]; then
-				APRSState='running'
-			else
-				APRSState='stopped'
-			fi
-		else
-			APRSState='not installed'
-		fi
-		echo "APRSGateway is $APRSState"
-	fi
-}
-
-ModuleStatus () {
-	local LoadState SubState mcvar
-	if [ -z ${3} ]; then
-		ModuleState[$1]='EMPTY'
-		MMDVMState[$1]='EMPTY'
-		DMRState[$1]='EMPTY'
-		YSFState[$1]='EMPTY'
-	else
-		mcvar="n${3}"
-		ModuleProcess[$1]="qn$3"
-		MMDVMProcess[$1]=''
-		MMDVMState[$1]='EMPTY'
-		DMRProcess[$1]=''
-		DMRState[$1]='EMPTY'
-		YSFProcess[$1]=''
-		YSFState[$1]='EMPTY'
-		if [[ "${ModuleProcess[$1]}" == 'qnmmdvmhost' ]]; then
-			ModuleProcess[$1]='qnrelay'
-			MMDVMProcess[$1]='mmdvm'
-			MMDVMState[$1]='not installed'
-			DMRProcess[$1]='dmrgateway'
-			DMRState[$1]='not installed'
-			YSFProcess[$1]='ysfgateway'
-			YSFState[$1]='not installed'
-		elif [[ "${ModuleProcess[$1]}" == 'qnmmdvmmodem' ]]; then
-			ModuleProcess[$1]='qnmodem'
-		fi
-		if [[ ${!mcvar} > 1 ]]; then
-			ModuleProcess[$1]="${ModuleProcess[$1]}${2}"
-			if [[ "${MMDVMProcess[$1]}" == 'mmdvm' ]]; then
-				MMDVMProcess[$1]="${MMDVMProcess[$1]}${2}"
-				DMRProcess[$1]="${DMRProcess[$1]}${2}"
-				YSFProcess[$1]="${YSFProcess[$1]}${2}"
-			fi
-		fi
-		LoadState=$( GetState Load ${ModuleProcess[$1]} )
-		SubState=$( GetState Sub ${ModuleProcess[$1]} )
-		if [[ "$LoadState" == "loaded" ]]; then
-			if [[ $SubState == "running" ]]; then
-				ModuleState[$1]='running'
-			else
-				ModuleState[$1]='stopped'
-			fi
-		else
-			ModuleState[$1]='not installed'
-		fi
-		if [[ "${MMDVMState[$1]}" != 'EMPTY' ]]; then
-			LoadState=$( GetState Load ${MMDVMProcess[$1]} )
-			SubState=$( GetState Sub ${MMDVMProcess[$1]} )
-			if [[ "$LoadState" == "loaded" ]]; then
-				if [[ $SubState == "running" ]]; then
-					MMDVMState[$1]='running'
-				else
-					MMDVMState[$1]='stopped'
-				fi
-			else
-				MMDVMState[$1]='not installed'
-			fi
-			LoadState=$( GetState Load ${DMRProcess[$1]} )
-			SubState=$( GetState Sub ${DMRProcess[$1]} )
-			if [[ "$LoadState" == "loaded" ]]; then
-				if [[ $SubState == "running" ]]; then
-					DMRState[$1]='running'
-				else
-					DMRState[$1]='stopped'
-				fi
-			else
-				DMRState[$1]='not installed'
-			fi
-			LoadState=$( GetState Load ${YSFProcess[$1]} )
-			SubState=$( GetState Sub ${YSFProcess[$1]} )
-			if [[ "$LoadState" == "loaded" ]]; then
-				if [[ $SubState == "running" ]]; then
-					YSFState[$1]='running'
-				else
-					YSFState[$1]='stopped'
-				fi
-			else
-				YSFState[$1]='not installed'
-			fi
-		fi
-		if [[ "$3" == 'mmdvmhost' ]]; then
-			echo "Module ${2^^} - ${ModuleProcess[$1]} is ${ModuleState[$1]} - ${MMDVMProcess[$1]} is ${MMDVMState[$1]} - ${DMRProcess[$1]} is ${DMRState[$1]} - ${YSFProcess[$1]} is ${YSFState[$1]}"
-		else
-			echo "Module ${2^^} - ${ModuleProcess[$1]} is ${ModuleState[$1]}"
-		fi
-	fi
 }
 
 Header () {
 	local count
-	count=$( ps -aux | grep -e qn -e MMDVMHost | wc -l )
+	count=$( ps -aux | grep -e qn | wc -l )
 	if [ ${count} -gt 3 ]; then
 		echo
 		echo "USER       PID %CPU %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND"
-		ps -aux | grep -e qngateway -e qnlink -e qndtmf -e qndvap -e qnitap -e qnrelay -e qndvrptr -e qnmodem -e MMDVMHost -e YSFGateway -e DMRGateway -e APRSGateway | grep -v grep
+		ps -aux | grep -e qngateway -e qnlink -e qndtmf | grep -v grep
 	fi
 	echo
 }
@@ -285,103 +112,15 @@ LogMenu () {
 		else
 			echo "      qnlink is not running"
 		fi
+		if [[ $RelayState == 'running' ]]; then
+			echo " r  : qnrelay Log"
+		else
+			echo "      qnrelay is not running"
+		fi
 		if [[ $DTMFState == 'running' ]]; then
-			echo " dt : qndtmf Log"
+			echo " d  : qndtmf Log"
 		else
 			echo "      qndtmf is not running"
-		fi
-		if [[ ${ModuleState[0]} != 'EMPTY' ]]; then
-			if [[ ${ModuleState[0]} == 'running' ]]; then
-				echo " a  : ${ModuleProcess[0]} Log"
-			else
-				echo "      ${ModuleProcess[0]} is not running"
-			fi
-		fi
-		if [[ ${ModuleState[1]} != 'EMPTY' ]]; then
-			if [[ ${ModuleState[1]} == 'running' ]]; then
-				echo " b  : ${ModuleProcess[1]} Log"
-			else
-				echo "      ${ModuleProcess[1]} is not running"
-			fi
-		fi
-		if [[ ${ModuleState[2]} != 'EMPTY' ]]; then
-			if [[ ${ModuleState[2]} == 'running' ]]; then
-				echo " c  : ${ModuleProcess[2]} Log"
-			else
-				echo "      ${ModuleProcess[2]} is not running"
-			fi
-		fi
-		if [[ ${MMDVMState[0]} != 'EMPTY' ]]; then
-			if [[ ${MMDVMState[0]} == 'running' ]]; then
-				echo " ma : ${MMDVMProcess[0]} Log"
-			else
-				echo "      ${MMDVMProcess[0]} is not running"
-			fi
-		fi
-		if [[ ${MMDVMState[1]} != 'EMPTY' ]]; then
-			if [[ ${MMDVMState[1]} == 'running' ]]; then
-				echo " mb : ${MMDVMProcess[1]} Log"
-			else
-				echo "      ${MMDVMProcess[1]} is not running"
-			fi
-		fi
-		if [[ ${MMDVMState[2]} != 'EMPTY' ]]; then
-			if [[ ${MMDVMState[2]} == 'running' ]]; then
-				echo " mc : ${MDVMProcess[2]} Log"
-			else
-				echo "      ${MMDVMProcess[2]} is not running"
-			fi
-		fi
-		if [[ ${DMRState[0]} != 'EMPTY' ]]; then
-			if [[ ${DMRState[0]} == 'running' ]]; then
-				echo " da : ${DMRProcess[0]} Log"
-			else
-				echo "      ${DMRProcess[0]} is not running"
-			fi
-		fi
-		if [[ ${DMRState[1]} != 'EMPTY' ]]; then
-			if [[ ${DMRState[1]} == 'running' ]]; then
-				echo " db : ${DMRProcess[1]} Log"
-			else
-				echo "      ${DMRProcess[1]} is not running"
-			fi
-		fi
-		if [[ ${DMRState[2]} != 'EMPTY' ]]; then
-			if [[ ${DMRState[2]} == 'running' ]]; then
-				echo " dc : ${DMRProcess[2]} Log"
-			else
-				echo "      ${DMRProcess[2]} is not running"
-			fi
-		fi
-		if [[ ${YSFState[0]} != 'EMPTY' ]]; then
-			if [[ ${YSFState[0]} == 'running' ]]; then
-				echo " ya : ${YSFProcess[0]} Log"
-			else
-				echo "      ${YSFProcess[0]} is not running"
-			fi
-		fi
-		if [[ ${YSFState[1]} != 'EMPTY' ]]; then
-			if [[ ${YSFState[1]} == 'running' ]]; then
-				echo " yb : ${YSFProcess[1]} Log"
-			else
-				echo "      ${YSFProcess[1]} is not running"
-			fi
-		fi
-		if [[ ${YSFState[2]} != 'EMPTY' ]]; then
-			if [[ ${YSFState[2]} == 'running' ]]; then
-				echo " yc : ${YSFProcess[2]} Log"
-			else
-				echo "      ${YSFProcess[2]} is not running"
-			fi
-		fi
-		if [ -d $APRSPATH ]; then
-			if [[ ${APRSState} != 'not installed' ]]; then
-				if [[ ${APRSState} == 'running' ]]; then
-					echo " p  : APRSGateway Log"
-				else
-					echo "      APRSGateway is not running"
-				fi
-			fi
 		fi
 		echo
 		echo " q  : quit and return to main menu"
@@ -392,34 +131,10 @@ LogMenu () {
 			sudo journalctl -u qngateway -f
 		elif [[ "$ans" == l* ]] && [[ "$LinkState" == 'running' ]]; then
 			sudo journalctl -u qnlink -f
-		elif [[ "$ans" == dt* ]] && [[ "$DTMFState" == 'running' ]]; then
+		elif [[ "$ans" == r* ]] && [[ "$RelayState" == 'running' ]]; then
+			sudo journalctl -u qnrelay -f
+		elif [[ "$ans" == d* ]] && [[ "$DTMFState" == 'running' ]]; then
 			sudo journalctl -u qndtmf -f
-		elif [[ "$ans" == a* ]] && [[ "${ModuleState[0]}" == 'running' ]]; then
-			sudo journalctl -u ${ModuleProcess[0]} -f
-		elif [[ "$ans" == b* ]] && [[ "${ModuleState[1]}" == 'running' ]]; then
-			sudo journalctl -u ${ModuleProcess[1]} -f
-		elif [[ "$ans" == c* ]] && [[ "${ModuleState[2]}" == 'running' ]]; then
-			sudo journalctl -u ${ModuleProcess[2]} -f
-		elif [[ "$ans" == ma* ]] && [[ "${MMDVMState[0]}" == 'running' ]]; then
-			sudo journalctl -u ${MMDVMProcess[0]} -f
-		elif [[ "$ans" == mb* ]] && [[ "${MMDVMState[1]}" == 'running' ]]; then
-			sudo journalctl -u ${MMDVMProcess[1]} -f
-		elif [[ "$ans" == mc* ]] && [[ "${MMDVMState[2]}" == 'running' ]]; then
-			sudo journalctl -u ${MMDVMProcess[2]} -f
-		elif [[ "$ans" == da* ]] && [[ "${DMRState[0]}" == 'running' ]]; then
-			sudo journalctl -u ${DMRProcess[0]} -f
-		elif [[ "$ans" == db* ]] && [[ "${DMRState[1]}" == 'running' ]]; then
-			sudo journalctl -u ${DMRProcess[1]} -f
-		elif [[ "$ans" == dc* ]] && [[ "${DMRState[2]}" == 'running' ]]; then
-			sudo journalctl -u ${DMRProcess[2]} -f
-		elif [[ "$ans" == ya* ]] && [[ "${YSFState[0]}" == 'running' ]]; then
-			sudo journalctl -u ${YSFProcess[0]} -f
-		elif [[ "$ans" == yb* ]] && [[ "${YSFState[1]}" == 'running' ]]; then
-			sudo journalctl -u ${YSFProcess[1]} -f
-		elif [[ "$ans" == yc* ]] && [[ "${YSFState[2]}" == 'running' ]]; then
-			sudo journalctl -u ${YSFProcess[2]} -f
-		elif [[ "$ans" == p* ]] && [[ "${APRSState}" == 'running' ]]; then
-			sudo journalctl -u aprsgateway -f
 		fi
 	done
 	ans=''
@@ -433,84 +148,24 @@ MaintenanceMenu () {
 		echo "            MaintenanceMenu"
 		Header
 		if [[ "$GateState" == 'running' ]]; then
-			echo " g  : Stop  QnetGateway"
+			echo " g : Stop  QnetGateway"
 		elif [[ "$GateState" == 'stopped' ]]; then
-			echo " g  : Start QnetGateway"
+			echo " g : Start QnetGateway"
 		fi
 		if [[ "$LinkState" == 'running' ]]; then
-			echo " l  : Stop  QnetLink"
+			echo " l : Stop  QnetLink"
 		elif [[ "$LinkState" == 'stopped' ]]; then
-			echo " l  : Start QnetLink"
+			echo " l : Start QnetLink"
+		fi
+		if [[ "$RelayState" == 'running' ]]; then
+			echo " r : Stop  QnetLink"
+		elif [[ "$RelayState" == 'stopped' ]]; then
+			echo " r : Start QnetLink"
 		fi
 		if [[ "$DTMFState" == 'running' ]]; then
-			echo " dt : Stop  DTMF"
+			echo " d : Stop  DTMF"
 		elif [[ "$DTMFState" == 'stopped' ]]; then
-			echo " dt : Start DTMF"
-		fi
-		if [[ "${ModuleState[0]}" == 'running' ]]; then
-			echo " a  : Stop  Module A"
-		elif [[ "${ModuleState[0]}" == 'stopped' ]]; then
-			echo " a  : Start Module A"
-		fi
-		if [[ "${ModuleState[1]}" == 'running' ]]; then
-			echo " b  : Stop  Module B"
-		elif [[ "${ModuleState[1]}" == 'stopped' ]]; then
-			echo " b  : Start Module B"
-		fi
-		if [[ "${ModuleState[2]}" == 'running' ]]; then
-			echo " c  : Stop  Module C"
-		elif [[ "${ModuleState[2]}" == 'stopped' ]]; then
-			echo " c  : Start Module C"
-		fi
-		if [[ "${MMDVMState[0]}" == 'running' ]]; then
-			echo " ma : Stop  MMDVMHost A"
-		elif [[ "${MMDVMState[0]}" == 'stopped' ]]; then
-			echo " ma : Start MMDVMHost A"
-		fi
-		if [[ "${MMDVMState[1]}" == 'running' ]]; then
-			echo " mb : Stop  MMDVMHost B"
-		elif [[ "${MMDVMState[1]}" == 'stopped' ]]; then
-			echo " mb : Start MMDVMHost B"
-		fi
-		if [[ "${MMDVMState[2]}" == 'running' ]]; then
-			echo " mc : Stop  MMDVMHost C"
-		elif [[ "${MMDVMState[2]}" == 'stopped' ]]; then
-			echo " mc : Start MMDVMHost C"
-		fi
-		if [[ "${DMRState[0]}" == 'running' ]]; then
-			echo " da : Stop  DMRGateway A"
-		elif [[ "${DMRState[0]}" == 'stopped' ]]; then
-			echo " da : Start DMRGateway A"
-		fi
-		if [[ "${DMRState[1]}" == 'running' ]]; then
-			echo " db : Stop  DMRGateway B"
-		elif [[ "${DMRState[1]}" == 'stopped' ]]; then
-			echo " db : Start DMRGateway B"
-		fi
-		if [[ "${DMRState[2]}" == 'running' ]]; then
-			echo " dc : Stop  DMRGateway C"
-		elif [[ "${DMRState[2]}" == 'stopped' ]]; then
-			echo " dc : Start DMRGateway C"
-		fi
-		if [[ "${YSFState[0]}" == 'running' ]]; then
-			echo " ya : Stop  YSFGateway A"
-		elif [[ "${YSFState[0]}" == 'stopped' ]]; then
-			echo " ys : Start YSFGateway A"
-		fi
-		if [[ "${YSFState[1]}" == 'running' ]]; then
-			echo " yb : Stop  YSFGateway B"
-		elif [[ "${YSFState[1]}" == 'stopped' ]]; then
-			echo " yb : Start YSFGateway B"
-		fi
-		if [[ "${YSFState[2]}" == 'running' ]]; then
-			echo " yc : Stop  YSFGateway C"
-		elif [[ "${YSFState[2]}" == 'stopped' ]]; then
-			echo " yc : Start YSFGateway C"
-		fi
-		if [[ "${APRSState}" == 'running' ]]; then
-			echo " p  : Stop  APRSGateway"
-		elif [[ "${APRSState}" == 'stopped' ]]; then
-			echo " p  : Start APRSGateway"
+			echo " d : Start DTMF"
 		fi
 		echo
 		echo " q : Return to main Menu"
@@ -531,102 +186,18 @@ MaintenanceMenu () {
 				sudo systemctl start qnlink
 			fi
 			BaseStatus
-		elif [[ "$ans" == dt* ]]; then
+		elif [[ "$ans" == r* ]]; then
+			if [[ "$RelayState" == 'running' ]]; then
+				sudo systemctl stop qnrelay
+			elif [[ "$RelayState" == 'stopped' ]]; then
+				sudo systemctl start qnrelay
+			fi
+			BaseStatus
+		elif [[ "$ans" == d* ]]; then
 			if [[ "$DTMFState" == 'running' ]]; then
 				sudo systemctl stop qndtmf
 			elif [[ "$DTMFState" == 'stopped' ]]; then
 				sudo systemctl start qndtmf
-			fi
-			BaseStatus
-		elif [[ "$ans" == a* ]] && [ -n $module_a ]; then
-			if [[ "${ModuleState[0]}" == 'running' ]]; then
-				sudo systemctl stop ${ModuleProcess[0]}
-			elif [[ "${ModuleState[0]}" == 'stopped' ]]; then
-				sudo systemctl start ${ModuleProcess[0]}
-			fi
-			ModuleStatus 0 a $module_a
-		elif [[ "$ans" == b* ]] && [ -n $module_b ]; then
-			if [[ "${ModuleState[1]}" == 'running' ]]; then
-				sudo systemctl stop ${ModuleProcess[1]}
-			elif [[ "${ModuleState[1]}" == 'stopped' ]]; then
-				sudo systemctl start ${ModuleProcess[1]}
-			fi
-			ModuleStatus 1 b $module_b
-		elif [[ "$ans" == c* ]] && [ -n $module_c ]; then
-			if [[ "${ModuleState[2]}" == 'running' ]]; then
-				sudo systemctl stop ${ModuleProcess[2]}
-			elif [[ "${ModuleState[2]}" == 'stopped' ]]; then
-				sudo systemctl start ${ModuleProcess[2]}
-			fi
-			ModuleStatus 2 c $module_c
-		elif [[ "$ans" == ma* ]] && [ -n $module_a ]; then
-			if [[ "${MMDVMState[0]}" == 'running' ]]; then
-				sudo systemctl stop ${MMDVMProcess[0]}
-			elif [[ "${MMDVMState[0]}" == 'stopped' ]]; then
-				sudo systemctl start ${MMDVMProcess[0]}
-			fi
-			ModuleStatus 0 a $module_a
-		elif [[ "$ans" == mb* ]] && [ -n $module_b ]; then
-			if [[ "${MMDVMState[1]}" == 'running' ]]; then
-				sudo systemctl stop ${MMDVMProcess[1]}
-			elif [[ "${MMDVMState[1]}" == 'stopped' ]]; then
-				sudo systemctl start ${MMDVMProcess[1]}
-			fi
-			ModuleStatus 1 b $module_b
-		elif [[ "$ans" == mc* ]] && [ -n $module_c ]; then
-			if [[ "${MMDVMState[2]}" == 'running' ]]; then
-				sudo systemctl stop ${MMDVMProcess[2]}
-			elif [[ "${MMDVMState[2]}" == 'stopped' ]]; then
-				sudo systemctl start ${MMDVMProcess[2]}
-			fi
-			ModuleStatus 2 c $module_c
-		elif [[ "$ans" == da* ]] && [ -n $module_a ]; then
-			if [[ "${DMRState[0]}" == 'running' ]]; then
-				sudo systemctl stop ${DMRProcess[0]}
-			elif [[ "${DMRState[0]}" == 'stopped' ]]; then
-				sudo systemctl start ${DMRrocess[0]}
-			fi
-			ModuleStatus 0 a $module_a
-		elif [[ "$ans" == db* ]] && [ -n $module_b ]; then
-			if [[ "${DMRState[1]}" == 'running' ]]; then
-				sudo systemctl stop ${DMRProcess[1]}
-			elif [[ "${DMRState[1]}" == 'stopped' ]]; then
-				sudo systemctl start ${DMRProcess[1]}
-			fi
-			ModuleStatus 1 b $module_b
-		elif [[ "$ans" == dc* ]] && [ -n $module_c ]; then
-			if [[ "${DMRState[2]}" == 'running' ]]; then
-				sudo systemctl stop ${DMRProcess[2]}
-			elif [[ "${DMRState[2]}" == 'stopped' ]]; then
-				sudo systemctl start ${DMRProcess[2]}
-			fi
-			ModuleStatus 2 c $module_c
-		elif [[ "$ans" == ya* ]] && [ -n $module_a ]; then
-			if [[ "${YSFState[0]}" == 'running' ]]; then
-				sudo systemctl stop ${YSFProcess[0]}
-			elif [[ "${YSFState[0]}" == 'stopped' ]]; then
-				sudo systemctl start ${YSFProcess[0]}
-			fi
-			ModuleStatus 0 a $module_a
-		elif [[ "$ans" == yb* ]] && [ -n $module_b ]; then
-			if [[ "${YSFState[1]}" == 'running' ]]; then
-				sudo systemctl stop ${YSFProcess[1]}
-			elif [[ "${YSFState[1]}" == 'stopped' ]]; then
-				sudo systemctl start ${YSFProcess[1]}
-			fi
-			ModuleStatus 1 b $module_b
-		elif [[ "$ans" == yc* ]] && [ -n $module_c ]; then
-			if [[ "${YSFState[2]}" == 'running' ]]; then
-				sudo systemctl stop ${YSFProcess[2]}
-			elif [[ "${YSFState[2]}" == 'stopped' ]]; then
-				sudo systemctl start ${YSFProcess[2]}
-			fi
-			ModuleStatus 2 c $module_c
-		elif [[ "$ans" == p* ]]; then
-			if [[ "${APRSState}" == 'running' ]]; then
-				sudo systemctl stop ${APRSProcess}
-			elif [[ "${APRSState}" == 'stopped' ]]; then
-				sudo systemctl start ${APRSProcess}
 			fi
 			BaseStatus
 		fi
@@ -635,26 +206,19 @@ MaintenanceMenu () {
 }
 
 GatewayMenu () {
-	which wget > /dev/null
-	if test $? -ne 0; then
-		echo 'wget not found, installing...'
-		sudo apt install wget
-	fi
 	ans=''
 	while [[ "$ans" != q* ]]; do
 		local refcount=$( grep -s "^REF" gwys.txt | wc -l )
 		local dcscount=$( grep -s "^DCS" gwys.txt | wc -l )
 		local xrfcount=$( grep -s "^XRF" gwys.txt | wc -l )
-		local xlxcount=$( grep -s "^XLX" gwys.txt | wc -l )
-		local repcount=$( grep -s -v "^#" gwys.txt | grep -s -v -e "^REF" -e "^DCS" -e "^XRF" -e "^XLX" | wc -l )
+		local repcount=$( grep -s -v "^#" gwys.txt | grep -s -v -e "^REF" -e "^DCS" -e "^XRF" | wc -l )
 		clear
 		echo
 		echo "            Gateway File"
 		echo
-		echo "     $refcount REF, $dcscount DCS, $xrfcount XRF, $xlxcount XLX and $repcount Repeaters"
+		echo "     $refcount REF, $dcscount DCS, $xrfcount XRF and $repcount Repeaters"
 		echo
 		echo "     All initialization will overwrite any existing file!"
-		echo "i6 : Initialize gwys.txt using www.PiStar.uk, xlxapi.rlx.lu and IPv6 from QuadNet"
 		echo "ip : Initialize gwys.txt using www.PiStar.uk/downloads and xlxapi.rlx.lu"
 		echo "iv : Initialize gwys.txt using VA3UV.com (includes a large # of repeaters)"
 		echo "ir : Initialize gwys.txt using VA3UV.com (but just the reflectors)"
@@ -664,55 +228,29 @@ GatewayMenu () {
 		echo "q  : Quit and return to Main Menu"
 		echo
 		read -p "Command: " ans
-		if   [[ "$ans" == i6* ]]; then
-			wget -O XLX_Hosts.txt http://xlxapi.rlx.lu/api.php?do=GetXLXDMRMaster
-			wget http://www.pistar.uk/downloads/DExtra_Hosts.txt
-			wget http://www.pistar.uk/downloads/DPlus_Hosts.txt
-			wget http://www.pistar.uk/downloads/DCS_Hosts.txt
-			wget https://hosts.openquad.net/ipv6-hosts.txt
-			/bin/rm -f gwys.txt
-			echo "# Downloaded from www.pistar.uk and xlxapi.rlx.lu `date`" > gwys.txt
-			awk '$1 ~ /^XLX/ { gsub("\r", ""); printf "%s %s 30001\n", $1, $2 }' XLX_Hosts.txt >> gwys.txt
-			awk '$1 ~ /^XRF/ { printf "%s %s 30001\n", $1, $2 }' DExtra_Hosts.txt >> gwys.txt
-			awk '$1 ~ /^DCS/ { printf "%s %s 30051\n", $1, $2 }' DCS_Hosts.txt >> gwys.txt
-			awk '$1 ~ /^REF/ { printf "%s %s 20001\n", $1, $2 }' DPlus_Hosts.txt >> gwys.txt
-			cat ipv6-hosts.txt >> gwys.txt
-			if [ -e My_Hosts.txt ]; then
-				cat My_Hosts.txt >> gwys.txt
-			fi
-			/bin/rm -f {XLX,DExtra,DPlus,DCS}_Hosts.txt ipv6-hosts.txt
-		elif [[ "$ans" == ip* ]]; then
+		if   [[ "$ans" == ip* ]]; then
 			wget -O XLX_Hosts.txt http://xlxapi.rlx.lu/api.php?do=GetXLXDMRMaster
 			wget http://www.pistar.uk/downloads/DExtra_Hosts.txt
 			wget http://www.pistar.uk/downloads/DPlus_Hosts.txt
 			wget http://www.pistar.uk/downloads/DCS_Hosts.txt
 			/bin/rm -f gwys.txt
 			echo "# Downloaded from www.pistar.uk and xlxapi.rlx.lu `date`" > gwys.txt
-			awk '$1 ~ /^XLX/ { gsub("\r", ""); printf "%s %s 30001\n", $1, $2 }' XLX_Hosts.txt >> gwys.txt
+			awk '$1 ~ /^XLX/ { printf "%s %s 30001\n", $1, $2 }' XLX_Hosts.txt >> gwys.txt
 			awk '$1 ~ /^XRF/ { printf "%s %s 30001\n", $1, $2 }' DExtra_Hosts.txt >> gwys.txt
 			awk '$1 ~ /^DCS/ { printf "%s %s 30051\n", $1, $2 }' DCS_Hosts.txt >> gwys.txt
 			awk '$1 ~ /^REF/ { printf "%s %s 20001\n", $1, $2 }' DPlus_Hosts.txt >> gwys.txt
-			if [ -e My_Hosts.txt ]; then
-				cat My_Hosts.txt >> gwys.txt
-			fi
-			/bin/rm -f {XLX,DExtra,DPlus,DCS}_Hosts.txt
+			/bin/rm -f D{XLX,Extra,Plus,CS}_Hosts.txt
 		elif [[ "$ans" == iv* ]]; then
 			/bin/rm -f gwys.txt
 			wget http://www.va3uv.com/gwys.txt
-			if [ -e My_Hosts.txt ]; then
-				cat My_Hosts.txt >> gwys.txt
-			fi
 		elif [[ "$ans" == ir* ]]; then
 			/bin/rm -f gwys.txt
-			wget -nv -O gwys.va3uv.txt http://www.va3uv.com/gwys.txt
+			/usr/bin/wget -nv -O gwys.va3uv.txt http://www.va3uv.com/gwys.txt
 			if [ -e gwys.va3uv.txt ]; then
 				echo "# Downloaded from www.va3uv.com `date`" > gwys.txt
 				awk '$1~/^REF/{print $1, $2, $3}' gwys.va3uv.txt >> gwys.txt
 				awk '$1~/^XRF/{print $1, $2, $3}' gwys.va3uv.txt >> gwys.txt
 				awk '$1~/^DCS/{print $1, $2, $3}' gwys.va3uv.txt >> gwys.txt
-				if [ -e My_Hosts.txt ]; then
-					cat My_Hosts.txt >> gwys.txt
-				fi
 				rm -f gwys.va3uv.txt
 			fi
 		elif [[ "$ans" == n* ]]; then
@@ -746,7 +284,8 @@ else
 	echo "ERROR: There is no Makefile or makefile"
 	exit 1
 fi
-source <( grep -e '^BINDIR=' -e '^MMPATH=' -e '^DMRPATH=' -e '^YSFPATH=' -e '^APRSPATH' $MAKEFILE )
+
+source <( grep -e '^BINDIR=' $MAKEFILE )
 if [ -z $BINDIR ]; then
 	echo "ERROR: The BINDIR definition in $MAKEFILE is empty!"
 	exit 1
@@ -756,45 +295,12 @@ if [ ! -d "$BINDIR" ]; then
 	exit 1
 fi
 
-ndvap=0
-ndvrptr=0
-nitap=0
-nmmdvm=0
-nmodem=0
-
-for m in a b c ; do
-	mod=module_${m}
-	if [ -z ${!mod} ]; then continue; fi
-	type=${!mod}
-	if [[ "$type" == 'dvap' ]]; then
-		advap[${ndvap}]=${m}
-		ndvap=$((ndvap + 1))
-	elif [[ "$type" == 'dvrptr' ]]; then
-		advrptr[$ndvap]=${m}
-		ndvrptr=$((ndvrptr + 1))
-	elif [[ "$type" == 'itap' ]]; then
-		aitap[${nitap}]=${m}
-		nitap=$((nitap + 1))
-	elif [[ "$type" == 'mmdvmhost' ]]; then
-		ammdvm[${nmmdvm}]=${m}
-		nmmdvm=$((nmmdvm + 1))
-	elif [[ "$type" == 'mmdvmmodem' ]]; then
-		amodem[${nmodem}]=${m}
-		nmodem=$((nmodem + 1))
-	fi
-done
-
-MODULE_COUNT=$((ndvap + ndvrptr + nitap + nmmdvm + nmodem))
-
 while [[ "$ans" != q* ]]; do
 	clear
 	echo
-	echo "            Qnet Administration Menu V#211013"
+	echo "            IcomGateway Administration Menu  V#20202"
 	Header
 	BaseStatus
-	ModuleStatus 0 a "$module_a"
-	ModuleStatus 1 b "$module_b"
-	ModuleStatus 2 c "$module_c"
 	echo
 	if [[ "$GateState" == 'not installed' ]] || [[ "$LinkState" == 'not installed' ]]; then
 		if [ -e gwys.txt ]; then
@@ -831,21 +337,12 @@ while [[ "$ans" != q* ]]; do
 	# EXECUTE COMMANDS
 	if   [[ "$GateState" == 'not installed' ]] && [[ "$ans" == is* ]]; then
 		InstallSystem
-		InstallMMDVMHosts
 		echo 'Wait for a few seconds for everything to start...'
 		sleep 5
 	elif [[ "$GateState" != 'not installed' ]] && [[ "$ans" == us* ]]; then
 		InstallSystem un
-		InstallMMDVMHosts un
 	elif [[ "$GateState" == 'not installed' ]] && [[ "$ans" == gp* ]]; then
 		git pull
-		for dir in $MMPATH $DMRPATH $YSFPATH $APRSPATH; do
-			if [ -d $dir ]; then
-				pushd $dir
-				git pull
-				popd
-			fi
-		done
 		read -p 'Press <Enter> to continue: ' ans
 		ans=''
 	elif [[ "$ans" == gw* ]]; then
@@ -865,13 +362,6 @@ while [[ "$ans" != q* ]]; do
 		sudo make uninstalldtmf
 	elif [[ "$ans" == c* ]]; then
 		make clean
-		for dir in $MMPATH $DMRPATH $YSFPATH $APRSPATH; do
-			if [ -d $dir ]; then
-				pushd $dir
-				make clean
-				popd
-			fi
-		done
 	elif [[ "$ans" == m* ]]; then
 		MaintenanceMenu
 	elif [[ "$ans" == l* ]]; then
