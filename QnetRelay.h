@@ -1,5 +1,5 @@
 /*
- *   Copyright (C) 2018 by Thomas A. Early N7TAE
+ *   Copyright (C) 2022 by Thomas A. Early N7TAE
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -22,6 +22,7 @@
 #include <string>
 #include <netinet/in.h>
 
+#include "SockAddress.h"
 #include "UnixPacketSock.h"
 #include "KRBase.h"
 
@@ -34,15 +35,13 @@ public:
 	// functions
 	CQnetRelay();
 	~CQnetRelay();
-	bool Run(const char *cfgfile);
+	bool Initialize(const char *cfgfile);
+	bool Run();
 
 private:
 	// functions
-	bool Initialize(const char *cfgfile);
-	bool ProcessGateway(const int len, const unsigned char *raw);
-	bool ProcessIcom(const int len, const unsigned char *raw);
-	int OpenSocket(const std::string &address, unsigned short port);
-	int SendTo(const int fd, const unsigned char *buf, const int size, const std::string &address, const unsigned short port);
+	int OpenSocket(const CSockAddress &sock);
+	void SendToIcom(const unsigned char *buf, const int size) const;
 
 	// read configuration file
 	bool ReadConfig(const char *);
@@ -52,12 +51,12 @@ private:
 	CUnixPacketClient ToGate;
 
 	// config data
-	std::string MMDVM_INTERNAL_IP, MMDVM_TARGET_IP;
-	unsigned short MMDVM_IN_PORT, MMDVM_OUT_PORT;
-	bool log_qso, IS_DSTARREPEATER;
+	std::string REPEATER_IP;
+	unsigned short REPEATER_PORT;
+	int available_module;
 
 	// parameters
-	int msock;
-	unsigned int seed;
-	unsigned short COUNTER;
+	int icom_fd;
+	CSockAddress icom_sock;
+	unsigned short G2_COUNTER_OUT, OLD_REPLY_SEQ, NEW_REPLY_SEQ;
 };

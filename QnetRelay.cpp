@@ -1,5 +1,5 @@
 /*
- *   Copyright (C) 2018-2021 by Thomas A. Early N7TAE
+ *   Copyright (C) 2022 by Thomas A. Early N7TAE
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -31,16 +31,16 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <errno.h>
+#include <thread>
 
 #include "QnetRelay.h"
 #include "QnetTypeDefs.h"
 #include "QnetConfigure.h"
 
-#define RELAY_VERSION "210420"
+#define RELAY_VERSION "20202"
 
 CQnetRelay::CQnetRelay() :
-	seed(time(NULL)),
-	COUNTER(0)
+	G2_COUNTER_OUT(0)
 {
 }
 
@@ -53,52 +53,59 @@ bool CQnetRelay::Initialize(const char *cfgfile)
 	if (ReadConfig(cfgfile))
 		return true;
 
+	icom_sock.Initialize(AF_INET, REPEATER_PORT, REPEATER_IP.c_str());
+	icom_fd = OpenSocket(icom_sock);
+	if (icom_fd < 0)
+		return true;
+
+	// send INIT to Icom Stack
+	unsigned char buf[500];
+	memset(buf, 0, 10);
+	memcpy(buf, "INIT", 4);
+	buf[6] = 0x73U;
+	// we can use the module a band_addr for INIT
+	SendToIcom(buf, 10);
+	printf("Initializing the Icom controller...\n");
+
+	// get the acknowledgement from the ICOM Stack
+	CSockAddress addr;
+	while (keep_running) {
+		socklen_t reclen;
+		int recvlen = recvfrom(icom_fd, buf, 500, 0, addr.GetPointer(), &reclen);
+		if (10==recvlen && 0==memcmp(buf, "INIT", 4) && 0x72U==buf[6] && 0x0U==buf[7]) {
+			OLD_REPLY_SEQ = 256U * buf[4] + buf[5];
+			NEW_REPLY_SEQ = OLD_REPLY_SEQ + 1;
+			G2_COUNTER_OUT = NEW_REPLY_SEQ;
+			printf("SYNC: old=%u, new=%u\n", OLD_REPLY_SEQ, NEW_REPLY_SEQ);
+			break;
+		}
+		std::this_thread::sleep_for(std::chrono::milliseconds(100));
+	}
+	printf("Detected ICOM controller at %s:%u!\n", addr.GetAddress(), addr.GetPort());
+
 	return false;
 }
 
-int CQnetRelay::OpenSocket(const std::string &address, unsigned short port)
+int CQnetRelay::OpenSocket(const CSockAddress &sock)
 {
-	if (! port)
-	{
-		printf("ERROR: OpenSocket: non-zero port must be specified.\n");
-		return -1;
-	}
-
-	int fd = ::socket(PF_INET, SOCK_DGRAM, 0);
+	int fd = socket(PF_INET, SOCK_DGRAM, 0);
 	if (fd < 0)
 	{
 		printf("Cannot create the UDP socket, err: %d, %s\n", errno, strerror(errno));
 		return -1;
 	}
 
-	sockaddr_in addr;
-	::memset(&addr, 0, sizeof(sockaddr_in));
-	addr.sin_family      = AF_INET;
-	addr.sin_port        = htons(port);
-	addr.sin_addr.s_addr = htonl(INADDR_ANY);
-
-	if (! address.empty())
-	{
-		addr.sin_addr.s_addr = ::inet_addr(address.c_str());
-		if (addr.sin_addr.s_addr == INADDR_NONE)
-		{
-			printf("The local address is invalid - %s\n", address.c_str());
-			close(fd);
-			return -1;
-		}
-	}
-
 	int reuse = 1;
-	if (::setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, (char *)&reuse, sizeof(reuse)) == -1)
+	if (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, (char *)&reuse, sizeof(reuse)) == -1)
 	{
-		printf("Cannot set the UDP socket %s:%u option, err: %d, %s\n", address.c_str(), port, errno, strerror(errno));
+		printf("Cannot set the UDP socket %s:%u option, err: %d, %s\n", sock.GetAddress(), sock.GetPort(), errno, strerror(errno));
 		close(fd);
 		return -1;
 	}
 
-	if (::bind(fd, (sockaddr*)&addr, sizeof(sockaddr_in)) == -1)
+	if (0 > bind(fd, sock.GetCPointer(), sock.GetSize()))
 	{
-		printf("Cannot bind the UDP socket %s:%u address, err: %d, %s\n", address.c_str(), port, errno, strerror(errno));
+		printf("Cannot bind the UDP socket %s:%u address, err: %d, %s\n", sock.GetAddress(), sock.GetPort(), errno, strerror(errno));
 		close(fd);
 		return -1;
 	}
@@ -106,21 +113,14 @@ int CQnetRelay::OpenSocket(const std::string &address, unsigned short port)
 	return fd;
 }
 
-bool CQnetRelay::Run(const char *cfgfile)
+bool CQnetRelay::Run()
 {
-	if (Initialize(cfgfile))
-		return true;
-
-	msock = OpenSocket(MMDVM_INTERNAL_IP, MMDVM_OUT_PORT);
-	if (msock < 0)
-		return true;
-
 	if (ToGate.Open(togate.c_str(), this))
 		return true;
 
-	int fd = ToGate.GetFD();
+	int gateway_fd = ToGate.GetFD();
 
-	printf("msock=%d, gateway=%d\n", msock, fd);
+	printf("File descriptors: icom=%d, gateway=%d\n", icom_fd, gateway_fd);
 
 	keep_running = true;
 
@@ -128,9 +128,9 @@ bool CQnetRelay::Run(const char *cfgfile)
 	{
 		fd_set readfds;
 		FD_ZERO(&readfds);
-		FD_SET(msock, &readfds);
-		FD_SET(fd, &readfds);
-		int maxfs = (msock > fd) ? msock : fd;
+		FD_SET(icom_fd, &readfds);
+		FD_SET(gateway_fd, &readfds);
+		int maxfs = (icom_fd > gateway_fd) ? icom_fd : gateway_fd;
 
 		// don't care about writefds and exceptfds:
 		// and we'll wait as long as needed
@@ -144,110 +144,139 @@ bool CQnetRelay::Run(const char *cfgfile)
 			continue;
 
 		// there is something to read!
-		unsigned char buf[100];
 		sockaddr_in addr;
 		memset(&addr, 0, sizeof(sockaddr_in));
 		socklen_t size = sizeof(sockaddr);
 		ssize_t len;
 
-		if (FD_ISSET(msock, &readfds))
+		if (FD_ISSET(icom_fd, &readfds))
 		{
-			len = ::recvfrom(msock, buf, 100, 0, (sockaddr *)&addr, &size);
+			SDSTR dstr;
+			len = recvfrom(icom_fd, dstr.title, sizeof(SDSTR), 0, (sockaddr *)&addr, &size);
 
-			if (len < 0)
+			if (ntohs(addr.sin_port) != REPEATER_PORT)
+				printf("Unexpected icom port was %u, expected %u.\n", ntohs(addr.sin_port), REPEATER_PORT);
+
+			// acknowledge the packet
+			if (0x73U==dstr.flag[0] && (0x21U==dstr.flag[1] || 0x11U==dstr.flag[1] || 0x0U==dstr.flag[1]))
 			{
-				fprintf(stderr, "ERROR: Run: recvfrom(mmdvmhost) return error %d: %s\n", errno, strerror(errno));
-				break;
+				dstr.flag[0] = 0x72u;
+				dstr.flag[1] = dstr.flag[2] = dstr.remaining = 0;
+				SendToIcom(dstr.title, 10);
 			}
 
-			if (ntohs(addr.sin_port) != MMDVM_IN_PORT)
-				fprintf(stderr, "DEBUG: Run: read from msock but port was %u, expected %u.\n", ntohs(addr.sin_port), MMDVM_IN_PORT);
-
+			if (10 == len)
+			{
+				// handle Icom handshaking
+				if (0x72u == dstr.flag[0])
+				{	// ACK from rptr
+					NEW_REPLY_SEQ = ntohs(dstr.counter);
+					if (NEW_REPLY_SEQ == OLD_REPLY_SEQ) {
+						G2_COUNTER_OUT = NEW_REPLY_SEQ;
+						OLD_REPLY_SEQ = NEW_REPLY_SEQ - 1;
+					} else
+						OLD_REPLY_SEQ = NEW_REPLY_SEQ;
+				}
+			}
+			else if ((58 == len || 29 == len) && (0 == memcmp(dstr.title, "DSTR", 4)))
+			{
+				SDSVT dsvt;
+				memcpy(dsvt.title, "DSVT", 4);
+				dsvt.config = (58 == len) ? 0x10u : 0x20u;
+				memset(dsvt.flaga, 0, 3);
+				dsvt.id = 0x20;
+				dsvt.flagb[0] = dstr.vpkt.dst_rptr_id;
+				dsvt.flagb[1] = dstr.vpkt.snd_rptr_id;
+				dsvt.flagb[2] = dstr.vpkt.snd_term_id;
+				dsvt.streamid = dstr.vpkt.streamid;
+				dsvt.ctrl = dstr.vpkt.ctrl;
+				if (58 == len)
+				{
+					memcpy(dsvt.hdr.flag, dstr.vpkt.hdr.flag, 41);
+					ToGate.Write(dsvt.title, 56);
+				}
+				else
+				{
+					memcpy(dsvt.vasd.voice, dstr.vpkt.vasd.text, 12);
+					ToGate.Write(dsvt.title, 27);
+				}
+			}
+			else if (len < 0)
+			{
+				fprintf(stderr, "ERROR: Run: recvfrom() return error %d: %s\n", errno, strerror(errno));
+				break;
+			}
+			else if (0 == len)
+			{
+				printf("Read zero bytes from the Icom repeater\n");
+			}
+			else
+			{
+				Dump("Unexpected packet from Icom reapeater", dstr.title, len);
+			}
 		}
 
-		if (FD_ISSET(fd, &readfds))
+		if (FD_ISSET(gateway_fd, &readfds))
 		{
-			len = ToGate.Read(buf, 100);
+			SDSVT dsvt;
+			len = ToGate.Read(dsvt.title, sizeof(SDSVT));
 
-			if (len < 0)
+			if ((56 == len || 27 == len) && (0 == memcmp(dsvt.title, "DSVT", 4)))
+			{
+				SDSTR dstr;
+				memcpy(dstr.title, "DSTR", 4);
+				dstr.counter = ntohs(G2_COUNTER_OUT++);
+				dstr.flag[0] = 0x73u;
+				dstr.flag[1] = 0x12u;
+				dstr.flag[2] = 0x00u;
+				dstr.remaining = (56 == len) ? 48 : 19;
+				dstr.vpkt.icm_id = 0x20u;
+				dstr.vpkt.dst_rptr_id = dsvt.flagb[0];
+				dstr.vpkt.snd_rptr_id = dsvt.flagb[1];
+				dstr.vpkt.snd_term_id = dsvt.flagb[2];
+				dstr.vpkt.streamid = dsvt.streamid;
+				dstr.vpkt.ctrl = dsvt.ctrl;
+				if (56 == len)
+				{
+					memcpy(dstr.vpkt.hdr.flag, dsvt.hdr.flag, 41);
+					SendToIcom(dstr.title, 58);
+				}
+				else
+				{
+					memcpy(dstr.vpkt.vasd.voice, dsvt.vasd.voice, 12);
+					SendToIcom(dstr.title, 29);
+				}
+			}
+			else if (len < 0)
 			{
 				fprintf(stderr, "ERROR: Run: ToGate.Read() returned error %d: %s\n", errno, strerror(errno));
 				break;
 			}
-		}
-
-		if (len == 0)
-		{
-			fprintf(stderr, "DEBUG: Run: read zero bytes from %u\n", ntohs(addr.sin_port));
-			continue;
-		}
-
-		if (0 == memcmp(buf, "DSRP", 4))
-		{
-			//printf("read %d bytes from MMDVMHost\n", (int)len);
-			if (ProcessIcom(len, buf))
-				break;
-		}
-		else if (0 == ::memcmp(buf, "DSVT", 4))
-		{
-			//printf("read %d bytes from MMDVMHost\n", (int)len);
-			if (ProcessGateway(len, buf))
-				break;
-		}
-		else
-		{
-			char title[5];
-			for (int i=0; i<4; i++)
-				title[i] = (buf[i]>=0x20u && buf[i]<0x7fu) ? buf[i] : '.';
-			title[4] = '\0';
-			fprintf(stderr, "DEBUG: Run: received unknow packet '%s' len=%d\n", title, (int)len);
+			else if (0 == len)
+			{
+				printf("Read zero bytes from the gateway\n");
+			}
+			else
+			{
+				Dump("Unexpected packet from the gateway", dsvt.title, len);
+			}
 		}
 	}
 
-	::close(msock);
+	close(icom_fd);
 	ToGate.Close();
 	return false;
 }
 
-int CQnetRelay::SendTo(const int fd, const unsigned char *buf, const int size, const std::string &address, const unsigned short port)
+void CQnetRelay::SendToIcom(const unsigned char *buf, const int size) const
 {
-	sockaddr_in addr;
-	::memset(&addr, 0, sizeof(sockaddr_in));
-	addr.sin_family = AF_INET;
-	addr.sin_addr.s_addr = ::inet_addr(address.c_str());
-	addr.sin_port = htons(port);
-
-	int len = ::sendto(fd, buf, size, 0, (sockaddr *)&addr, sizeof(sockaddr_in));
+	int len = sendto(icom_fd, buf, size, 0, icom_sock.GetCPointer(), icom_sock.GetSize());
+	if (len == size)
+		return;
 	if (len < 0)
-		printf("ERROR: SendTo: fd=%d failed sendto %s:%u err: %d, %s\n", fd, address.c_str(), port, errno, strerror(errno));
-	else if (len != size)
-		printf("ERROR: SendTo: fd=%d tried to sendto %s:%u %d bytes, actually sent %d.\n", fd, address.c_str(), port, size, len);
-	return len;
-}
-
-bool CQnetRelay::ProcessGateway(const int len, const unsigned char *raw)
-{
-	if (27==len || 56==len)   //here is dstar data
-	{
-		SDSVT dsvt;
-		::memcpy(dsvt.title, raw, len);	// transfer raw data to SDSVT struct
-
-		SDSTR dstr;	// destination
-		// fill in some inital stuff
-		::memcpy(dstr.title, "DSTR", 4);
-	}
+		printf("sendto() Icom at %s:%u error: %s\n", icom_sock.GetAddress(), icom_sock.GetPort(), strerror(errno));
 	else
-		printf("DEBUG: ProcessGateway: unusual packet size read len=%d\n", len);
-	return false;
-}
-
-bool CQnetRelay::ProcessIcom(const int len, const unsigned char *raw)
-{
-	static unsigned short id = 0U;
-	SDSTR dstr;
-	memcpy(dstr.title, raw, len);	// transfer raw data to SDSRP struct
-
-	return false;
+		printf("ERROR: Icom short send %d bytes, actually sent %d.\n", size, len);
 }
 
 // process configuration file and return true if there was a problem
@@ -275,23 +304,17 @@ bool CQnetRelay::ReadConfig(const char *cfgFile)
 				fprintf(stderr, "Found an incompatible module, '%s', aborting!\n", type.c_str());
 				return true;
 			}
-			icom_path.assign(test);
+			available_module = i;
 			break;
 		}
 	}
 
 	cfg.GetValue("gateway_tomodem", estr, togate, 1, FILENAME_MAX);
-	cfg.GetValue(icom_path+"_internal_ip", type, MMDVM_INTERNAL_IP, 7, IP_SIZE);
-	cfg.GetValue(icom_path+"_target_ip", type, MMDVM_TARGET_IP, 7, IP_SIZE);
+	cfg.GetValue("gateway_icom_ip", type, REPEATER_IP, 7, IP_SIZE);
 
 	int i;
-	cfg.GetValue(icom_path+"_local_port", type, i, 10000, 65535);
-	MMDVM_IN_PORT = (unsigned short)i;
-	cfg.GetValue(icom_path+"_gateway_port", type, i, 10000, 65535);
-	MMDVM_OUT_PORT = (unsigned short)i;
-
-	cfg.GetValue(icom_path+"_is_dstarrepeater", type, IS_DSTARREPEATER);
-	cfg.GetValue("log_qso", estr, log_qso);
+	cfg.GetValue("gateway_icom_port", type, i, 10000, 65535);
+	REPEATER_PORT = (unsigned short)i;
 
 	return false;
 }
@@ -307,17 +330,21 @@ int main(int argc, const char **argv)
 
 	if ('-' == argv[1][0])
 	{
-		printf("\nQnetRelay Version #%s Copyright (C) 2018-2021 by Thomas A. Early N7TAE\n", RELAY_VERSION);
+		printf("\nQnetRelay Version #%s Copyright (C) 2022 by Thomas A. Early N7TAE\n", RELAY_VERSION);
 		printf("QnetRelay comes with ABSOLUTELY NO WARRANTY; see the LICENSE for details.\n");
-		printf("This is free software, and you are welcome to distribute it\nunder certain conditions that are discussed in the LICENSE file.\n\n");
+		printf("This is free software, and you are welcome to distribute it\nunder certain conditions that are discussed in the LICENSE file.\n");
 		return 0;
 	}
 
 	CQnetRelay qnrelay;
 
-	bool trouble = qnrelay.Run(argv[1]);
+	if (qnrelay.Initialize(argv[1]))
+		return EXIT_FAILURE;
+
+	if (qnrelay.Run())
+		return EXIT_FAILURE;
 
 	printf("%s is closing.\n", argv[0]);
 
-	return trouble ? 1 : 0;
+	return EXIT_SUCCESS;
 }

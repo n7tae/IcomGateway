@@ -33,4 +33,5 @@ protected:
 	static std::atomic<bool> keep_running;
 	static void SigHandler(int sig);
 	void AddFDSet(int &max, int newfd, fd_set *set);
+	void Dump(const std::string &title, const unsigned char *data, unsigned int length);
 };

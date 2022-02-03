@@ -61,3 +61,49 @@ void CKRBase::AddFDSet(int &max, int newfd, fd_set *set)
 		max = newfd;
 	FD_SET(newfd, set);
 }
+void CKRBase::Dump(const std::string &title, const unsigned char *data, unsigned int length)
+{
+	printf("%s", title.c_str());
+
+	unsigned int offset = 0U;
+
+	while (length > 0U)
+	{
+		std::string output;
+
+		unsigned int bytes = (length > 16U) ? 16U : length;
+
+		for (unsigned i = 0U; i < bytes; i++)
+		{
+			char temp[10U];
+			::sprintf(temp, "%02X ", data[offset + i]);
+			output += temp;
+		}
+
+		for (unsigned int i = bytes; i < 16U; i++)
+			output += "   ";
+
+		output += "   *";
+
+		for (unsigned i = 0U; i < bytes; i++)
+		{
+			unsigned char c = data[offset + i];
+
+			if (::isprint(c))
+				output += c;
+			else
+				output += '.';
+		}
+
+		output += '*';
+
+		printf("%04X:  %s", offset, output.c_str());
+
+		offset += 16U;
+
+		if (length >= 16U)
+			length -= 16U;
+		else
+			length = 0U;
+	}
+}
