@@ -2837,7 +2837,7 @@ int main(int argc, char **argv)
 	printf("VERSION %s\n", GW_VERSION.c_str());
 	if (argc != 2)
 	{
-		printf("usage: %s qn.cfg\n", argv[0]);
+		printf("usage: %s path_to_config_file\n", argv[0]);
 		return 1;
 	}
 	CQnetGateway QnetGateway;
@@ -2845,6 +2845,9 @@ int main(int argc, char **argv)
 	{
 		return 1;
 	}
+
 	QnetGateway.Process();
+
 	printf("Leaving processing loop...\n");
+	return 0;
 }

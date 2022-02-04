@@ -36,7 +36,7 @@ public:
 	CQnetRelay();
 	~CQnetRelay();
 	bool Initialize(const char *cfgfile);
-	bool Run();
+	void Run();
 
 private:
 	// functions

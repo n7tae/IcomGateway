@@ -96,9 +96,10 @@ bool CQnetRelay::Initialize(const char *cfgfile)
 		}
 		std::this_thread::sleep_for(std::chrono::milliseconds(100));
 	}
-	printf("Detected ICOM controller at %s:%u!\n", addr.GetAddress(), addr.GetPort());
+	if (keep_running)
+		printf("Detected ICOM controller at %s:%u!\n", addr.GetAddress(), addr.GetPort());
 
-	return false;
+	return !keep_running;
 }
 
 int CQnetRelay::OpenSocket(const CSockAddress &sock)
@@ -128,7 +129,7 @@ int CQnetRelay::OpenSocket(const CSockAddress &sock)
 	return fd;
 }
 
-bool CQnetRelay::Run()
+void CQnetRelay::Run()
 {
 	keep_running = true;
 
@@ -273,7 +274,6 @@ bool CQnetRelay::Run()
 
 	close(icom_fd);
 	ToGate.Close();
-	return false;
 }
 
 void CQnetRelay::SendToIcom(const unsigned char *buf, const int size) const
@@ -338,7 +338,7 @@ int main(int argc, const char **argv)
 
 	if ('-' == argv[1][0])
 	{
-		printf("\nQnetRelay Version #%s Copyright (C) 2022 by Thomas A. Early N7TAE\n", RELAY_VERSION);
+		printf("QnetRelay Version #%s Copyright (C) 2022 by Thomas A. Early N7TAE\n", RELAY_VERSION);
 		printf("QnetRelay comes with ABSOLUTELY NO WARRANTY; see the LICENSE for details.\n");
 		printf("This is free software, and you are welcome to distribute it\nunder certain conditions that are discussed in the LICENSE file.\n");
 		return 0;
@@ -347,12 +347,11 @@ int main(int argc, const char **argv)
 	CQnetRelay qnrelay;
 
 	if (qnrelay.Initialize(argv[1]))
-		return EXIT_FAILURE;
+		return 1;
 
-	if (qnrelay.Run())
-		return EXIT_FAILURE;
+	qnrelay.Run();
 
 	printf("%s is closing.\n", argv[0]);
 
-	return EXIT_SUCCESS;
+	return 0;
 }
