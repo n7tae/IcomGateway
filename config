@@ -304,6 +304,32 @@ IrcddbMenu () {
 	done
 }
 
+IcomStackMenu () {
+	key=''
+	while [[ "$key" != q* ]]; do
+		clear
+		echo
+		echo "      Icom Stack IP Menu"
+		echo
+		echo -n "l : Local IP      = "; EvaluateVar icom_internal_ip{,_d}
+		echo -n "s : Icom Stack IP = "; EvaluateVar icom_external_ip{,_d}
+		if [ -n "$em" ]; then
+			echo -n "p : Icom Port     = "; EvaluateVar icom_port{,_d}
+		fi
+		EndMenu
+
+		if   [[ "$key" == l* ]]; then icom_internal_ip="$value"
+		elif [[ "$key" == s* ]]; then icom_external_ip="$value"
+		elif [[ "$key" == p* ]]; then icom_port=$value
+		elif [[ "$key" == u* ]]; then
+			if   [[ "$value" == l* ]]; then unset icom_internal_ip
+			elif [[ "$value" == s* ]]; then unset icom_external_ip
+			elif [[ "$value" == p* ]]; then unset icom_port
+			fi
+		fi
+	done
+}
+
 GateMenu () {
 	key=''
 	while [[ "$key" != q* ]]; do
@@ -312,8 +338,6 @@ GateMenu () {
 		echo "               Gateway/APRS Menu"
 		echo
 		echo    "     Gateway Option"
-		echo -n "ia : Icom Repeater IP Address       = "; EvaluateVar gateway_icom_ip{,_d}
-		echo -n "ip : Icom Repeater IP Port          = "; EvaluateVar gateway_icom_port{,_d}
 		if [ -n "$em" ]; then
 			echo -n "re : Regenerate Headers             = "; EvaluateVar gateway_header_regen{,_d}
 			echo -n "si : Send IRC network Module Info   = "; EvaluateVar gateway_send_qrgs_maps{,_d}
@@ -340,9 +364,7 @@ GateMenu () {
 		fi
 		EndMenu
 
-		if   [[ "$key" == ia* ]]; then gateway_icom_ip="$value"
-		elif [[ "$key" == ip* ]]; then gateway_icom_port="$value"
-		elif [[ "$key" == re* ]]; then SetBooleanValue gateway_header_regen "$value"
+		if   [[ "$key" == re* ]]; then SetBooleanValue gateway_header_regen "$value"
 		elif [[ "$key" == si* ]]; then SetBooleanValue gateway_send_qrgs_maps "$value"
 		elif [[ "$key" == ta* ]]; then gateway_local_irc_ip="$value"
 		elif [[ "$key" == ga* ]]; then gateway_ip="$value"
@@ -359,9 +381,7 @@ GateMenu () {
 		elif [[ "$key" == k*  ]]; then aprs_interval="$value"
 		elif [[ "$key" == af* ]]; then aprs_filter="$value"
 		elif [[ "$key" == u*  ]]; then
-			if   [[ "$value" == ia* ]]; then unset gateway_icom_ip
-			elif [[ "$value" == ip* ]]; then unset gateway_icom_port
-			elif [[ "$value" == re* ]]; then unset gateway_header_regen
+			if   [[ "$value" == re* ]]; then unset gateway_header_regen
 			elif [[ "$value" == si* ]]; then unset gateway_send_qrgs_maps
 			elif [[ "$value" == ta* ]]; then unset gateway_local_irc_ip
 			elif [[ "$value" == ga* ]]; then unset gateway_ip
@@ -489,6 +509,10 @@ WriteCFGFile () {
 			q=${p}_frequency;      [ -z ${!q+x} ] || echo "${q}=${!q}"   >> $outFile
 		fi
 	done
+	# icom stack section
+	[ -z "${icom_internal_ip+x}" ] || echo "icom_internal_ip=${icom_internal_ip}" >> $outFile
+	[ -z "${icom_external_ip+x}" ] || echo "icom_external_ip=${icom_external_ip}" >> $outFile
+	[ -z "${icom_port+x}"        ] || echo "icom_port=${icom_port}"               >> $outFile
 	# gateway_section
 	[ -z "${gateway_header_regen+x}"   ] || echo "gateway_header_regen=${gateway_header_regen}"     >> $outFile
 	[ -z "${gateway_send_qrgs_maps+x}" ] || echo "gateway_send_qrgs_maps=${gateway_send_qrgs_maps}" >> $outFile
@@ -501,8 +525,6 @@ WriteCFGFile () {
 	[ -z "${gateway_desc2+x}"          ] || echo "gateway_desc2='${gateway_desc2}'"                 >> $outFile
 	[ -z "${gateway_url+x}"            ] || echo "gateway_url='${gateway_url}'"                     >> $outFile
 	[ -z "${gateway_find_route+x}"     ] || echo "gateway_find_route='${gateway_find_route}'"       >> $outFile
-	[ -z "${gateway_icom_ip+x}"        ] || echo "gateway_icom_ip='${gateway_icom_ip}'"             >> $outFile
-	[ -z "${gateway_icom_port+x}"      ] || echo "gateway_icom_port=${gateway_icom_port}"           >> $outFile
 	# arps_ section
 	[ -z "${aprs_enable+x}"   ] || echo "aprs_enable=${aprs_enable}"     >> $outFile
 	[ -z "${aprs_host+x}"     ] || echo "aprs_host='${aprs_host}'"       >> $outFile
@@ -587,6 +609,7 @@ do
 	echo    "i : IRCDDB Menu             - login = '${ircddb_login}'"
 	echo    "g : Gateway/APRS Menu       - location info and route cache"
 	echo    "l : Link/D-Plus Menu        - linking access"
+	echo    "s : Icom Stack Menu         - IP setup"
 	echo    "D : Dashboard Menu          - Dashboard customization"
 	if [ -n "$em" ]; then
 		echo "d : Debugging/Files/Timings - miscellaneous parameters"
@@ -608,6 +631,7 @@ do
 	elif [[ "$ans" == g* ]]; then GateMenu
 	elif [[ "$ans" == l* ]]; then LinkMenu
 	elif [[ "$ans" == d* ]]; then FileMenu
+	elif [[ "$ans" == s* ]]; then IcomStackMenu
 	elif [[ "$ans" == w* ]]; then WriteCFGFile
 	fi
 done

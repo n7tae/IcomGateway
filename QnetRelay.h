@@ -51,12 +51,13 @@ private:
 	CUnixPacketClient ToGate;
 
 	// config data
-	std::string REPEATER_IP;
+	std::string LOCAL_IP, REPEATER_IP;
 	unsigned short REPEATER_PORT;
 	int available_module;
 
 	// parameters
 	int icom_fd;
 	CSockAddress icom_sock;
+	CSockAddress icom_stack;
 	unsigned short G2_COUNTER_OUT, OLD_REPLY_SEQ, NEW_REPLY_SEQ;
 };

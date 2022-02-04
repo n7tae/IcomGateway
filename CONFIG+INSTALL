@@ -32,6 +32,14 @@ at least one module. By convention, specify a 23cm module on A, a 70cm module on
 a 2M module on C. IcomGateway supports a maximum of three modules. The 23cm data module
 is not currently supported.
 
+Also be sure to visit the "Icom Stack Menu" and make sure the local and stack IP
+addresses are correct. A local address of "any" mean that your system will bind to
+0.0.0.0 and accept UDP port 20000 traffic from any network. If you need to, you can
+change this to the specific address at which the computer that IcomGateway is running.
+A stack address of 172.16.0.1 is the default Icom address. If you system is different,
+you may need to change this. In the expert menu, you can also change the port number, but
+this is NOT recommended.
+
 The configure script will show you the default values of every parameter the
 IcomGateway programs use. In most cases, the defaults are just fine and you don't
 need to override them with your own values. If you need to override the default value,

@@ -53,7 +53,8 @@ bool CQnetRelay::Initialize(const char *cfgfile)
 	if (ReadConfig(cfgfile))
 		return true;
 
-	icom_sock.Initialize(AF_INET, REPEATER_PORT, REPEATER_IP.c_str());
+	icom_sock.Initialize(AF_INET, REPEATER_PORT, LOCAL_IP.c_str());
+	icom_stack.Initialize(AF_INET, REPEATER_PORT, REPEATER_IP.c_str());
 	icom_fd = OpenSocket(icom_sock);
 	if (icom_fd < 0)
 		return true;
@@ -270,7 +271,7 @@ bool CQnetRelay::Run()
 
 void CQnetRelay::SendToIcom(const unsigned char *buf, const int size) const
 {
-	int len = sendto(icom_fd, buf, size, 0, icom_sock.GetCPointer(), icom_sock.GetSize());
+	int len = sendto(icom_fd, buf, size, 0, icom_stack.GetCPointer(), icom_stack.GetSize());
 	if (len == size)
 		return;
 	if (len < 0)
@@ -310,9 +311,10 @@ bool CQnetRelay::ReadConfig(const char *cfgFile)
 	}
 
 	cfg.GetValue("gateway_to_icom", estr, togate, 1, FILENAME_MAX);
-	cfg.GetValue("gateway_icom_ip", type, REPEATER_IP, 7, IP_SIZE);
+	cfg.GetValue("icom_internal_ip", estr, LOCAL_IP, 7, IP_SIZE);
+	cfg.GetValue("icom_external_ip", estr, REPEATER_IP, 7, IP_SIZE);
 	int i;
-	cfg.GetValue("gateway_icom_port", type, i, 10000, 65535);
+	cfg.GetValue("icom_port", estr, i, 10000, 65535);
 	REPEATER_PORT = (unsigned short)i;
 
 	return false;
