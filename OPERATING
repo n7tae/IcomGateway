@@ -1,6 +1,6 @@
 /*
  *   Copyright (C) 2010, 2011, 2012 by Scott Lawson KI4LKF
- *   addition Copyright (C) 2018 by Thomas A. Early N7TAE
+ *   addition Copyright (C) 2022 by Thomas A. Early N7TAE
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -18,7 +18,7 @@
  */
 
 I have substantially modified (and hopefully simplified) the configuration
-of this software, now, modules QnetGateway, QnetLink, QnetDVAP and QnetDVRPTR
+of this software, now, modules IcomGateway, QnetLink, QnetDVAP and QnetDVRPTR
 all use a single configuration file. Further, and this is the exciting
 part, NEARLY ALL of the parameters these modules need have a useful
 default value. If the default value is acceptible to you (and it
@@ -40,7 +40,7 @@ G2_ircDDB adapted from the OpenG2
    DESCRIPTION
 =================
 
-QnetGateway supports the following commands in YRCALL
+IcomGateway supports the following commands in YRCALL
 
 Note: In the commands that folow, _ is a SPACE.
 
@@ -108,11 +108,11 @@ system, respectively. Also note that rpt1 is passed to these scripts\
 so you can use this as an input parameter for your scripts.
 Only admins can execute scripts, so set QnetLink.admin to your callsign
 
-Required software to run QnetGateway correctly:
---- QnetGateway: The G2 audio gateway. This handle routing using an IRCddb
+Required software to run IcomGateway correctly:
+--- IcomGateway: The G2 audio gateway. This handle routing using an IRCddb
           network and also handle echo and voicemail and some audio
           notifications.
---- QnetLink: This communicates with QnetGateway to link the local G2 gateway
+--- QnetLink: This communicates with IcomGateway to link the local G2 gateway
           to reflectors.
 --- QnetDVAP, QnetDVRPTR, QNetITAP (can only be used with a compatible
           Icom radio that supports Terminal mode) or QnetRelay (used with
@@ -171,8 +171,8 @@ changes/additions/subtractions to the script then install your
 DTMF script with "sudo make installdtmf"
 
 Note:   When local RF user has entered dtmf tones on the Dstar HT
-        and then PTT is released, QnetGateway will print the whole
-        sequence in the QnetGateway.log just before it creates the
+        and then PTT is released, IcomGateway will print the whole
+        sequence in the IcomGateway.log just before it creates the
         dtmf file under  /tmp.
 
 How to enter DTMF tones correctly on your Dstar HT
@@ -210,11 +210,11 @@ dtmf tones into YRCALL commands using g2link_test program.
 
 ===========
 QnetLink is a small program that is used to link a local RF repeater
-band to a remote reflector. QnetLink software is used by our QnetGateway
+band to a remote reflector. QnetLink software is used by our IcomGateway
 (an IRCddb gateway).
 
 Before we begin, there are some dat files included that are the voice
-prompts used by QnetGateway and QnetLink:
+prompts used by IcomGateway and QnetLink:
 
 rebooting.dat
 baddtmfcmd.dat
@@ -258,7 +258,7 @@ See the DTMF+REMOTE+VOICE.README for more information.
 
 ============
 You may be thinking why did we put all this source code inside QnetLink
-instead of putting it all inside the Gateway software QnetGateway.
+instead of putting it all inside the Gateway software IcomGateway.
 Having divided the functionality produces a smaller memory and resource
 requirement for your computer.
 
