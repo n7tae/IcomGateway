@@ -53,11 +53,25 @@ bool CQnetRelay::Initialize(const char *cfgfile)
 	if (ReadConfig(cfgfile))
 		return true;
 
-	icom_sock.Initialize(AF_INET, REPEATER_PORT, LOCAL_IP.c_str());
+	// for the sendto address of the icom stack
 	icom_stack.Initialize(AF_INET, REPEATER_PORT, REPEATER_IP.c_str());
+
+	// open the icom socket
+	printf("Open the UDP socket to the icom stack\n");
+	icom_sock.Initialize(AF_INET, REPEATER_PORT, LOCAL_IP.c_str());
 	icom_fd = OpenSocket(icom_sock);
 	if (icom_fd < 0)
 		return true;
+
+	// open the unix socket to the gateway
+	printf("Connecting to the gateway at %s\n", togate.c_str());
+	if (ToGate.Open(togate.c_str(), this))
+		return true;
+
+	gateway_fd = ToGate.GetFD();
+
+	printf("File descriptors: icom=%d, gateway=%d\n", icom_fd, gateway_fd);
+
 
 	// send INIT to Icom Stack
 	unsigned char buf[500];
@@ -116,13 +130,6 @@ int CQnetRelay::OpenSocket(const CSockAddress &sock)
 
 bool CQnetRelay::Run()
 {
-	if (ToGate.Open(togate.c_str(), this))
-		return true;
-
-	int gateway_fd = ToGate.GetFD();
-
-	printf("File descriptors: icom=%d, gateway=%d\n", icom_fd, gateway_fd);
-
 	keep_running = true;
 
 	while (keep_running)

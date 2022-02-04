@@ -56,7 +56,7 @@ private:
 	int available_module;
 
 	// parameters
-	int icom_fd;
+	int icom_fd, gateway_fd;
 	CSockAddress icom_sock;
 	CSockAddress icom_stack;
 	unsigned short G2_COUNTER_OUT, OLD_REPLY_SEQ, NEW_REPLY_SEQ;
