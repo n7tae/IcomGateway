@@ -92,7 +92,7 @@ link_max_dongles_d=5         # maximum number of linked hot-spots
 #
 # Connection to the icom stack
 #
-icom_internal_ip_d=any           # where this is
+icom_internal_ip_d='0.0.0.0'     # binds to all networks
 icom_external_ip_d='172.16.0.1'  # where the icom stack is
 icom_port_d=20000                # don't change!
 
