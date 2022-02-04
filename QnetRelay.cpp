@@ -84,7 +84,7 @@ bool CQnetRelay::Initialize(const char *cfgfile)
 
 	// get the acknowledgement from the ICOM Stack
 	CSockAddress addr;
-	while (keep_running) {
+	while (IsRunning()) {
 		socklen_t reclen;
 		int recvlen = recvfrom(icom_fd, buf, 500, 0, addr.GetPointer(), &reclen);
 		if (10==recvlen && 0==memcmp(buf, "INIT", 4) && 0x72U==buf[6] && 0x0U==buf[7]) {
@@ -96,10 +96,13 @@ bool CQnetRelay::Initialize(const char *cfgfile)
 		}
 		std::this_thread::sleep_for(std::chrono::milliseconds(100));
 	}
-	if (keep_running)
+	if (IsRunning())
+	{
 		printf("Detected ICOM controller at %s:%u!\n", addr.GetAddress(), addr.GetPort());
-
-	return !keep_running;
+		return false;
+	}
+	fprintf(stderr, "Premature Initialize() exit\n");
+	return true;
 }
 
 int CQnetRelay::OpenSocket(const CSockAddress &sock)
@@ -131,9 +134,8 @@ int CQnetRelay::OpenSocket(const CSockAddress &sock)
 
 void CQnetRelay::Run()
 {
-	keep_running = true;
 
-	while (keep_running)
+	while (IsRunning())
 	{
 		fd_set readfds;
 		FD_ZERO(&readfds);
