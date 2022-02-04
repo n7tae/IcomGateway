@@ -93,11 +93,6 @@ bool CQnetRelay::Initialize(const char *cfgfile)
 		tv.tv_sec = 0;
 		tv.tv_usec = 100000;
 		auto rval = select(icom_fd+1, &fdset, NULL, NULL, &tv);
-		if (rval < 0)
-		{
-			fprintf(stderr, "select() error: %s\n", strerror(errno));
-			return true;
-		}
 		if (rval > 0)
 		{
 			socklen_t reclen;
@@ -365,8 +360,8 @@ int main(int argc, const char **argv)
 
 	if (qnrelay.Initialize(argv[1]))
 		return 1;
-
-	qnrelay.Run();
+	else
+		qnrelay.Run();
 
 	printf("%s is closing.\n", argv[0]);
 
