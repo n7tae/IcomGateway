@@ -112,7 +112,7 @@ private:
 	CUnixDgramReader FromRemote;
 	CUnixPacketServer ToLink, ToRelay;
 
-	std::string tolink, fromremote, torelay;
+	std::string to_link, fromremote, to_icom;
 
 	std::string OWNER, owner, FILE_DTMF, FILE_ECHOTEST, IRCDDB_PASSWORD[2], FILE_QNVOICE_FILE, DASH_SHOW_ORDER;
 

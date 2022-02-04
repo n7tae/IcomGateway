@@ -89,7 +89,7 @@ Header () {
 	if [ ${count} -gt 3 ]; then
 		echo
 		echo "USER       PID %CPU %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND"
-		ps -aux | grep -e qngateway -e qnlink -e qndtmf | grep -v grep
+		ps -aux | grep -e qngateway -e qnlink -e qnrelay -e qndtmf | grep -v grep
 	fi
 	echo
 }
@@ -148,24 +148,24 @@ MaintenanceMenu () {
 		echo "            MaintenanceMenu"
 		Header
 		if [[ "$GateState" == 'running' ]]; then
-			echo " g : Stop  QnetGateway"
+			echo " g : Stop  qngateway"
 		elif [[ "$GateState" == 'stopped' ]]; then
-			echo " g : Start QnetGateway"
+			echo " g : Start qngateway"
 		fi
 		if [[ "$LinkState" == 'running' ]]; then
-			echo " l : Stop  QnetLink"
+			echo " l : Stop  qnlink"
 		elif [[ "$LinkState" == 'stopped' ]]; then
-			echo " l : Start QnetLink"
+			echo " l : Start qnlink"
 		fi
 		if [[ "$RelayState" == 'running' ]]; then
-			echo " r : Stop  QnetLink"
+			echo " r : Stop  qnrelay"
 		elif [[ "$RelayState" == 'stopped' ]]; then
-			echo " r : Start QnetLink"
+			echo " r : Start qnrelay"
 		fi
 		if [[ "$DTMFState" == 'running' ]]; then
-			echo " d : Stop  DTMF"
+			echo " d : Stop  qndtmf"
 		elif [[ "$DTMFState" == 'stopped' ]]; then
-			echo " d : Start DTMF"
+			echo " d : Start qndtmf"
 		fi
 		echo
 		echo " q : Return to main Menu"

@@ -299,9 +299,9 @@ bool CQnetGateway::ReadConfig(char *cfgFile)
 	cfg.GetValue(path+"ipv6_port", estr, g2_ipv6_external.port, 1024, 65535);
 	cfg.GetValue(path+"header_regen", estr, GATEWAY_HEADER_REGEN);
 	cfg.GetValue(path+"send_qrgs_maps", estr, GATEWAY_SEND_QRGS_MAP);
-	cfg.GetValue(path+"tolink", estr, tolink, 1, FILENAME_MAX);
+	cfg.GetValue(path+"to_link", estr, to_link, 1, FILENAME_MAX);
 	cfg.GetValue(path+"fromremote", estr, fromremote, 1, FILENAME_MAX);
-	cfg.GetValue(path+"torelay", estr, torelay, 1, FILENAME_MAX);
+	cfg.GetValue(path+"to_icom", estr, to_icom, 1, FILENAME_MAX);
 	path.append("find_route");
 	if (cfg.KeyExists(path))
 	{
@@ -1135,7 +1135,7 @@ void CQnetGateway::ProcessG2Header(const SDSVT &g2buf, const int source_sock)
 				if (source_sock >= 0)
 					printf("IP=[%s]:%u\n", fromDstar.GetAddress(), fromDstar.GetPort());
 				else
-					printf("UnixSock=%s\n", tolink.c_str());
+					printf("UnixSock=%s\n", to_link.c_str());
 			}
 			lhcallsign[i].assign((const char *)g2buf.hdr.mycall, 8);
 			if (showLastHeard && memcmp(g2buf.hdr.sfx, "RPTR", 4) && std::regex_match(lhcallsign[i].c_str(), preg))
@@ -2582,14 +2582,14 @@ bool CQnetGateway::Init(char *cfgfile)
 	qnDB.ClearLH();
 
 	// Open unix sockets between qngateway and qnremote
-	printf("Connecting to qnlink at %s\n", tolink.c_str());
-	if (ToLink.Open(tolink.c_str(), this))
+	printf("Connecting to qnlink at %s\n", to_link.c_str());
+	if (ToLink.Open(to_link.c_str(), this))
 		return true;
 	printf("Opening remote port at %s\n", fromremote.c_str());
 	if (FromRemote.Open(fromremote.c_str()))
 		return true;
-	printf("Connecting to qnrelay at %s\n", torelay.c_str());
-	if (ToRelay.Open(torelay.c_str(), this))
+	printf("Connecting to qnrelay at %s\n", to_icom.c_str());
+	if (ToRelay.Open(to_icom.c_str(), this))
 		return true;
 
 	for (i=0; i<3; i++)

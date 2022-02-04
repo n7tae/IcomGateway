@@ -743,7 +743,7 @@ bool CQnetLink::ReadConfig(const char *cfgFile)
 	saved_max_dongles = max_dongles = (unsigned int)maxdongle;
 
 	key.assign("gateway_");
-	cfg.GetValue(key+"tolink", estr, togate, 1, FILENAME_MAX);
+	cfg.GetValue(key+"to_link", estr, togate, 1, FILENAME_MAX);
 
 	cfg.GetValue("log_qso", estr, qso_details);
 	cfg.GetValue("log_debug", estr, log_debug);

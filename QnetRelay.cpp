@@ -309,9 +309,8 @@ bool CQnetRelay::ReadConfig(const char *cfgFile)
 		}
 	}
 
-	cfg.GetValue("gateway_tomodem", estr, togate, 1, FILENAME_MAX);
+	cfg.GetValue("gateway_to_icom", estr, togate, 1, FILENAME_MAX);
 	cfg.GetValue("gateway_icom_ip", type, REPEATER_IP, 7, IP_SIZE);
-
 	int i;
 	cfg.GetValue("gateway_icom_port", type, i, 10000, 65535);
 	REPEATER_PORT = (unsigned short)i;
