@@ -83,18 +83,33 @@ bool CQnetRelay::Initialize(const char *cfgfile)
 	printf("Initializing the Icom controller...\n");
 
 	// get the acknowledgement from the ICOM Stack
+	// do this with 100ms select() so we can Control-C abort cleanly
 	CSockAddress addr;
 	while (IsRunning()) {
-		socklen_t reclen;
-		int recvlen = recvfrom(icom_fd, buf, 500, 0, addr.GetPointer(), &reclen);
-		if (10==recvlen && 0==memcmp(buf, "INIT", 4) && 0x72U==buf[6] && 0x0U==buf[7]) {
-			OLD_REPLY_SEQ = 256U * buf[4] + buf[5];
-			NEW_REPLY_SEQ = OLD_REPLY_SEQ + 1;
-			G2_COUNTER_OUT = NEW_REPLY_SEQ;
-			printf("SYNC: old=%u, new=%u\n", OLD_REPLY_SEQ, NEW_REPLY_SEQ);
-			break;
+		fd_set fdset;
+		FD_ZERO(&fdset);
+		FD_SET(icom_fd, &fdset);
+		struct timeval tv;
+		tv.tv_sec = 0;
+		tv.tv_usec = 100000;
+		auto rval = select(icom_fd+1, &fdset, NULL, NULL, &tv);
+		if (rval < 0)
+		{
+			fprintf(stderr, "select() error: %s\n", strerror(errno));
+			return true;
 		}
-		std::this_thread::sleep_for(std::chrono::milliseconds(100));
+		if (rval > 0)
+		{
+			socklen_t reclen;
+			int recvlen = recvfrom(icom_fd, buf, 500, 0, addr.GetPointer(), &reclen);
+			if (10==recvlen && 0==memcmp(buf, "INIT", 4) && 0x72U==buf[6] && 0x0U==buf[7]) {
+				OLD_REPLY_SEQ = 256U * buf[4] + buf[5];
+				NEW_REPLY_SEQ = OLD_REPLY_SEQ + 1;
+				G2_COUNTER_OUT = NEW_REPLY_SEQ;
+				printf("SYNC: old=%u, new=%u\n", OLD_REPLY_SEQ, NEW_REPLY_SEQ);
+				break;
+			}
+		}
 	}
 	if (IsRunning())
 	{
