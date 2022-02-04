@@ -71,8 +71,11 @@ bool CQnetRelay::Initialize(const char *cfgfile)
 	gateway_fd = ToGate.GetFD();
 
 	printf("File descriptors: icom=%d, gateway=%d\n", icom_fd, gateway_fd);
+	return false;
+}
 
-
+void CQnetRelay::IcomInit()
+{
 	// send INIT to Icom Stack
 	unsigned char buf[500];
 	memset(buf, 0, 10);
@@ -106,13 +109,6 @@ bool CQnetRelay::Initialize(const char *cfgfile)
 			}
 		}
 	}
-	if (IsRunning())
-	{
-		printf("Detected ICOM controller at %s:%u!\n", addr.GetAddress(), addr.GetPort());
-		return false;
-	}
-	fprintf(stderr, "Premature Initialize() exit\n");
-	return true;
 }
 
 int CQnetRelay::OpenSocket(const CSockAddress &sock)
@@ -144,6 +140,7 @@ int CQnetRelay::OpenSocket(const CSockAddress &sock)
 
 void CQnetRelay::Run()
 {
+	IcomInit();
 
 	while (IsRunning())
 	{
@@ -360,8 +357,8 @@ int main(int argc, const char **argv)
 
 	if (qnrelay.Initialize(argv[1]))
 		return 1;
-	else
-		qnrelay.Run();
+
+	qnrelay.Run();
 
 	printf("%s is closing.\n", argv[0]);
 

@@ -42,6 +42,7 @@ private:
 	// functions
 	int OpenSocket(const CSockAddress &sock);
 	void SendToIcom(const unsigned char *buf, const int size) const;
+	void IcomInit();
 
 	// read configuration file
 	bool ReadConfig(const char *);
