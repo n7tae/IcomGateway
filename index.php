@@ -92,7 +92,7 @@ function MyAndSfxToQrz(string $my, string $sfx)
 	}
 	return $my;
 }
-//example URL: https://www.google.com/maps?q=+52.37745,+001.99960
+//example URL: https://www.google.com/maps?q=+52.37745,-001.99960
 function Maidenhead(string $maid, float $lat, float $lon)
 {
 	$str = trim($maid);
