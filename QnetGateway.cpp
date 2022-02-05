@@ -2138,16 +2138,12 @@ void CQnetGateway::Process()
 		}
 
 		// process packets coming from local repeater module(s)
-		for (int i=0; i<3; i++)
+		if (IsRunning() && FD_ISSET(ToIcom.GetFD(), &fdset))
 		{
-			if (IsRunning() && FD_ISSET(ToIcom.GetFD(), &fdset))
-			{
-				SDSVT dsvt;
-				const ssize_t len = ToIcom.Read(dsvt.title, 56);
-				if (Rptr.mod[i].defined)
-					ProcessModem(len, dsvt);
-				FD_CLR(ToIcom.GetFD(), &fdset);
-			}
+			SDSVT dsvt;
+			const ssize_t len = ToIcom.Read(dsvt.title, 56);
+			ProcessModem(len, dsvt);
+			FD_CLR(ToIcom.GetFD(), &fdset);
 		}
 	}
 
