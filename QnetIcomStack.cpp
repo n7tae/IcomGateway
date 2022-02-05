@@ -100,6 +100,7 @@ void CQnetIcomStack::IcomInit()
 		{
 			socklen_t reclen;
 			int recvlen = recvfrom(icom_fd, buf, 500, 0, addr.GetPointer(), &reclen);
+			Dump("Got a packet from the stack:", buf, recvlen);
 			if (10==recvlen && 0==memcmp(buf, "INIT", 4) && 0x72U==buf[6] && 0x0U==buf[7]) {
 				OLD_REPLY_SEQ = 256U * buf[4] + buf[5];
 				NEW_REPLY_SEQ = OLD_REPLY_SEQ + 1;
