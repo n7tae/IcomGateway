@@ -212,6 +212,8 @@ void CQnetIcomStack::Run()
 				if (58 == len)
 				{
 					memcpy(dsvt.hdr.flag, dstr.vpkt.hdr.flag, 41);
+					memcpy(dsvt.hdr.rpt1, dstr.vpkt.hdr.r2, 8);
+					memcpy(dsvt.hdr.rpt2, dstr.vpkt.hdr.r1, 4);
 					ToGate.Write(dsvt.title, 56);
 				}
 				else
@@ -258,6 +260,8 @@ void CQnetIcomStack::Run()
 				if (56 == len)
 				{
 					memcpy(dstr.vpkt.hdr.flag, dsvt.hdr.flag, 41);
+					memcpy(dstr.vpkt.hdr.r1, dsvt.hdr.rpt2, 8);
+					memcpy(dstr.vpkt.hdr.r2, dsvt.hdr.rpt1, 8);
 					SendToIcom(dstr.title, 58);
 				}
 				else

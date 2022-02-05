@@ -63,7 +63,7 @@ void CKRBase::AddFDSet(int &max, int newfd, fd_set *set)
 }
 void CKRBase::Dump(const std::string &title, const unsigned char *data, unsigned int length)
 {
-	printf("%s", title.c_str());
+	printf("%s\n", title.c_str());
 
 	unsigned int offset = 0U;
 
@@ -97,7 +97,7 @@ void CKRBase::Dump(const std::string &title, const unsigned char *data, unsigned
 
 		output += '*';
 
-		printf("%04X:  %s", offset, output.c_str());
+		printf("%04X:  %s\n", offset, output.c_str());
 
 		offset += 16U;
 
