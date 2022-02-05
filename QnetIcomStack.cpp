@@ -33,22 +33,22 @@
 #include <errno.h>
 #include <thread>
 
-#include "QnetRelay.h"
+#include "QnetIcomStack.h"
 #include "QnetTypeDefs.h"
 #include "QnetConfigure.h"
 
 #define RELAY_VERSION "20202"
 
-CQnetRelay::CQnetRelay() :
+CQnetIcomStack::CQnetIcomStack() :
 	G2_COUNTER_OUT(0)
 {
 }
 
-CQnetRelay::~CQnetRelay()
+CQnetIcomStack::~CQnetIcomStack()
 {
 }
 
-bool CQnetRelay::Initialize(const char *cfgfile)
+bool CQnetIcomStack::Initialize(const char *cfgfile)
 {
 	if (ReadConfig(cfgfile))
 		return true;
@@ -74,7 +74,7 @@ bool CQnetRelay::Initialize(const char *cfgfile)
 	return false;
 }
 
-void CQnetRelay::IcomInit()
+void CQnetIcomStack::IcomInit()
 {
 	// send INIT to Icom Stack
 	unsigned char buf[500];
@@ -111,7 +111,7 @@ void CQnetRelay::IcomInit()
 	}
 }
 
-int CQnetRelay::OpenSocket(const CSockAddress &sock)
+int CQnetIcomStack::OpenSocket(const CSockAddress &sock)
 {
 	int fd = socket(PF_INET, SOCK_DGRAM, 0);
 	if (fd < 0)
@@ -138,7 +138,7 @@ int CQnetRelay::OpenSocket(const CSockAddress &sock)
 	return fd;
 }
 
-void CQnetRelay::Run()
+void CQnetIcomStack::Run()
 {
 	IcomInit();
 
@@ -285,7 +285,7 @@ void CQnetRelay::Run()
 	ToGate.Close();
 }
 
-void CQnetRelay::SendToIcom(const unsigned char *buf, const int size) const
+void CQnetIcomStack::SendToIcom(const unsigned char *buf, const int size) const
 {
 	int len = sendto(icom_fd, buf, size, 0, icom_stack.GetCPointer(), icom_stack.GetSize());
 	if (len == size)
@@ -297,7 +297,7 @@ void CQnetRelay::SendToIcom(const unsigned char *buf, const int size) const
 }
 
 // process configuration file and return true if there was a problem
-bool CQnetRelay::ReadConfig(const char *cfgFile)
+bool CQnetIcomStack::ReadConfig(const char *cfgFile)
 {
 	CQnetConfigure cfg;
 	printf("Reading file %s\n", cfgFile);
@@ -347,18 +347,18 @@ int main(int argc, const char **argv)
 
 	if ('-' == argv[1][0])
 	{
-		printf("QnetRelay Version #%s Copyright (C) 2022 by Thomas A. Early N7TAE\n", RELAY_VERSION);
-		printf("QnetRelay comes with ABSOLUTELY NO WARRANTY; see the LICENSE for details.\n");
+		printf("QnetIcomStack Version #%s Copyright (C) 2022 by Thomas A. Early N7TAE\n", RELAY_VERSION);
+		printf("QnetIcomStack comes with ABSOLUTELY NO WARRANTY; see the LICENSE for details.\n");
 		printf("This is free software, and you are welcome to distribute it\nunder certain conditions that are discussed in the LICENSE file.\n");
 		return 0;
 	}
 
-	CQnetRelay qnrelay;
+	CQnetIcomStack qnistack;
 
-	if (qnrelay.Initialize(argv[1]))
+	if (qnistack.Initialize(argv[1]))
 		return 1;
 
-	qnrelay.Run();
+	qnistack.Run();
 
 	printf("%s is closing.\n", argv[0]);
 

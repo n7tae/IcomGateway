@@ -37,8 +37,8 @@ BaseStatus () {
 	SubGate=$( systemctl show -p SubState --value qngateway )
 	LoadLink=$( systemctl show -p LoadState --value qnlink )
 	SubLink=$( systemctl show -p SubState --value qnlink )
-	LoadRelay=$( systemctl show -p LoadState --value qnrelay )
-	SubRelay=$( systemctl show -p SubState --value qnrelay )
+	LoadRelay=$( systemctl show -p LoadState --value qnistack )
+	SubRelay=$( systemctl show -p SubState --value qnistack )
 	LoadDTMF=$( systemctl show -p LoadState --value qndtmf )
 	SubDTMF=$( systemctl show -p SubState --value qndtmf )
 	if [[ $LoadGate == 'loaded' ]]; then
@@ -89,7 +89,7 @@ Header () {
 	if [ ${count} -gt 3 ]; then
 		echo
 		echo "USER       PID %CPU %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND"
-		ps -aux | grep -e qngateway -e qnlink -e qnrelay -e qndtmf | grep -v grep
+		ps -aux | grep -e qngateway -e qnlink -e qnistack -e qndtmf | grep -v -e journal -e grep
 	fi
 	echo
 }
@@ -113,9 +113,9 @@ LogMenu () {
 			echo "      qnlink is not running"
 		fi
 		if [[ $RelayState == 'running' ]]; then
-			echo " r  : qnrelay Log"
+			echo " r  : qnistack Log"
 		else
-			echo "      qnrelay is not running"
+			echo "      qnistack is not running"
 		fi
 		if [[ $DTMFState == 'running' ]]; then
 			echo " d  : qndtmf Log"
@@ -132,7 +132,7 @@ LogMenu () {
 		elif [[ "$ans" == l* ]] && [[ "$LinkState" == 'running' ]]; then
 			sudo journalctl -u qnlink -f
 		elif [[ "$ans" == r* ]] && [[ "$RelayState" == 'running' ]]; then
-			sudo journalctl -u qnrelay -f
+			sudo journalctl -u qnistack -f
 		elif [[ "$ans" == d* ]] && [[ "$DTMFState" == 'running' ]]; then
 			sudo journalctl -u qndtmf -f
 		fi
@@ -158,9 +158,9 @@ MaintenanceMenu () {
 			echo " l : Start qnlink"
 		fi
 		if [[ "$RelayState" == 'running' ]]; then
-			echo " r : Stop  qnrelay"
+			echo " r : Stop  qnistack"
 		elif [[ "$RelayState" == 'stopped' ]]; then
-			echo " r : Start qnrelay"
+			echo " r : Start qnistack"
 		fi
 		if [[ "$DTMFState" == 'running' ]]; then
 			echo " d : Stop  qndtmf"
@@ -188,9 +188,9 @@ MaintenanceMenu () {
 			BaseStatus
 		elif [[ "$ans" == r* ]]; then
 			if [[ "$RelayState" == 'running' ]]; then
-				sudo systemctl stop qnrelay
+				sudo systemctl stop qnistack
 			elif [[ "$RelayState" == 'stopped' ]]; then
-				sudo systemctl start qnrelay
+				sudo systemctl start qnistack
 			fi
 			BaseStatus
 		elif [[ "$ans" == d* ]]; then

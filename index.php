@@ -131,7 +131,7 @@ foreach($showlist as $section) {
 			if (`ps -aux | grep -e qn -e MMDVMHost | wc -l` > 2) {
 				echo 'Processes:<br><code>', "\n";
 				echo str_replace(' ', '&nbsp;', 'USER       PID %CPU %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND<br>'), "\n";
-				$lines = explode("\n", `ps -aux | grep -e qngateway -e qnlink -e qndtmf -e qndvap -e qnitap -e qnrelay -e qndvrptr -e qnmodem -e MMDVMHost | grep -v -e grep -e journal`);
+				$lines = explode("\n", `ps -aux | grep -e qngateway -e qnlink -e qndtmf -e qnistack | grep -v -e grep -e journal`);
 				foreach ($lines as $line) {
 					echo str_replace(' ', '&nbsp;', $line), "<br>\n";
 				}

@@ -29,12 +29,12 @@
 #define CALL_SIZE 8
 #define IP_SIZE 15
 
-class CQnetRelay : CKRBase
+class CQnetIcomStack : CKRBase
 {
 public:
 	// functions
-	CQnetRelay();
-	~CQnetRelay();
+	CQnetIcomStack();
+	~CQnetIcomStack();
 	bool Initialize(const char *cfgfile);
 	void Run();
 

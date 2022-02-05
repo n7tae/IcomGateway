@@ -37,7 +37,7 @@ SRCS = $(wildcard *.cpp) $(wildcard $(IRC)/*.cpp)
 OBJS = $(SRCS:.cpp=.o)
 DEPS = $(SRCS:.cpp=.d)
 
-ALL_PROGRAMS=qngateway qnlink qnremote qnvoice qnrelay
+ALL_PROGRAMS = qngateway qnlink qnistack qnremote qnvoice
 
 all    : $(ALL_PROGRAMS)
 
@@ -47,7 +47,7 @@ qngateway : QnetGateway.o KRBase.o aprs.o UnixDgramSocket.o UnixPacketSock.o TCP
 qnlink : QnetLink.o KRBase.o DPlusAuthenticator.o TCPReaderWriterClient.o UnixPacketSock.o UDPSocket.o QnetConfigure.o QnetDB.o
 	g++ -o $@ $^ $(LDFLAGS) -l sqlite3 -pthread
 
-qnrelay : QnetRelay.o KRBase.o UnixPacketSock.o QnetConfigure.o
+qnistack : QnetIcomStack.o KRBase.o UnixPacketSock.o QnetConfigure.o
 	g++ -o $@ $^ $(LDFLAGS)
 
 qnremote : QnetRemote.o UnixDgramSocket.o QnetConfigure.o
@@ -87,12 +87,12 @@ install : $(ALL_PROGRAMS) gwys.txt qn.cfg
 	systemctl enable qnlink.service
 	systemctl daemon-reload
 	systemctl start qnlink.service
-	######### QnetRelay #########
-	/bin/ln -f qnrelay $(BINDIR)/qnrelay
-	sed -e "s/XXX/qnrelay/" system/qnrelay.service > $(SYSDIR)/qnrelay$(MODULE).service
-	systemctl enable qnrelay$(MODULE).service
+	######### QnetIcomStack #########
+	/bin/ln -f qnistack $(BINDIR)/qnistack
+	sed -e "s/XXX/qnistack/" system/qnistack.service > $(SYSDIR)/qnistack.service
+	systemctl enable qnistack.service
 	systemctl daemon-reload
-	systemctl start qnrelay$(MODULE).service
+	systemctl start qnistack.service
 
 installdtmf : qndtmf
 	/bin/ln -f -s $(shell pwd)/qndtmf $(BINDIR)
@@ -133,11 +133,11 @@ uninstall :
 	/bin/rm -f $(CFGDIR)/qn.db
 	/bin/rm -f $(CFGDIR)/gwys.txt
 	/bin/rm -f $(BINDIR)/exec_?.sh
-	######### QnetRelay #########
-	systemctl stop qnrelay.service
-	systemctl disable qnrelay.service
-	/bin/rm -f $(SYSDIR)/qnrelay.service
-	/bin/rm -f $(BINDIR)/qnrelay
+	######### QnetIcomStack #########
+	systemctl stop qnistack.service
+	systemctl disable qnistack.service
+	/bin/rm -f $(SYSDIR)/qnistack.service
+	/bin/rm -f $(BINDIR)/qnistack
 	systemctl daemon-reload
 
 uninstalldtmf :

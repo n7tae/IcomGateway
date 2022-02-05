@@ -2588,7 +2588,7 @@ bool CQnetGateway::Init(char *cfgfile)
 	printf("Opening remote port at %s\n", fromremote.c_str());
 	if (FromRemote.Open(fromremote.c_str()))
 		return true;
-	printf("Connecting to qnrelay at %s\n", to_icom.c_str());
+	printf("Connecting to qnistack at %s\n", to_icom.c_str());
 	if (ToRelay.Open(to_icom.c_str(), this))
 		return true;
 

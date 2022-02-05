@@ -13,7 +13,7 @@ if( ($now-$lastRunTime) > 8 )
      # OpenDatabase
      $dbname = $cfgdir.'/qn.db';
      $db = new SQLite3($dbname, SQLITE3_OPEN_READONLY);
-     
+
      # Only proccess if defined in show list
      if( in_array("LH", $showlist) ) {
           $jsonArray = [];
@@ -31,18 +31,18 @@ if( ($now-$lastRunTime) > 8 )
                }
                $stmnt->close();
           }
-     
+
           # Write the lastHeard JSON file
           $lhJsonFile = fopen("../jsonData/lastHeard.json", "w");
           fwrite($lhJsonFile, json_encode($jsonArray));
           fclose($lhJsonFile);
-     } else { echo "Section disabled"; 
+     } else { echo "Section disabled";
           $lhJsonFile = fopen("../jsonData/lastHeard.json", "w");
           fwrite($lhJsonFile, "{ }\n");
           fclose($lhJsonFile);
      }
-     
-     
+
+
      # Only proccess if defined in show list
      if( in_array("MO", $showlist) ) {
           $jsonArray = [];
@@ -88,20 +88,20 @@ if( ($now-$lastRunTime) > 8 )
           $modJsonFile = fopen("../jsonData/modules.json", "w");
           fwrite($modJsonFile, json_encode($jsonArray));
           fclose($modJsonFile);
-     } else { 
+     } else {
           $modJsonFile = fopen("../jsonData/modules.json", "w");
           fwrite($modJsonFile, "{ }\n");
           fclose($modJsonFile);
-     } 
-     
+     }
+
      # Close database it is not needed anymore
      $db->Close();
-     
-     
+
+
      # Only proccess if defined in show list
      if( in_array("PS", $showlist) ) {
           $jsonArray = [];
-          $lines = explode("\n", `ps -eo user,pid,pcpu,size,cmd | grep -e qngateway -e qnlink -e qndtmf -e qndvap -e qnitap -e qnrelay -e qndvrptr -e qnmodem -e MMDVMHost | grep -v grep`);
+          $lines = explode("\n", `ps -eo user,pid,pcpu,size,cmd | grep -e qngateway -e qnlink -e qndtmf -e qndvap -e qnitap -e qnistack -e qndvrptr -e qnmodem -e MMDVMHost | grep -v grep`);
           foreach ($lines as $line) {
                $items = preg_split ('/\s+/', $line, 5);
                if( isset( $items[1] ) ) {
@@ -119,7 +119,7 @@ if( ($now-$lastRunTime) > 8 )
                fwrite($psJsonFile, "{ }\n");
           }
           fclose($psJsonFile);
-     } else { 
+     } else {
           # Section is disabled, replace with blank JSON file
           $psJsonFile = fopen("../jsonData/ps.json", "w");
           fwrite($psJsonFile, "{ }\n");
@@ -141,4 +141,3 @@ if( isset($_GET['jsonFile']) )
           readfile("../jsonData/ps.json");
 }
 ?>
-

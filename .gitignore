@@ -19,6 +19,6 @@ qn.cfg
 # Executables
 qngateway
 qnlink
-qnrelay
+qnistack
 qnremote
 qnvoice
