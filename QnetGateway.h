@@ -110,7 +110,7 @@ private:
 	SPORTIP g2_external, g2_ipv6_external, ircddb[2];
 
 	CUnixDgramReader FromRemote;
-	CUnixPacketServer ToLink, ToRelay;
+	CUnixPacketServer ToLink, ToIcom;
 
 	std::string to_link, fromremote, to_icom;
 

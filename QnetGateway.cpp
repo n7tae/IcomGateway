@@ -649,7 +649,7 @@ void CQnetGateway::ProcessTimeouts()
 				end_of_audio.streamid = toRptr[i].saved_hdr.streamid;
 				end_of_audio.ctrl = toRptr[i].sequence | 0x40;
 
-				ToRelay.Write(end_of_audio.title, 27);
+				ToIcom.Write(end_of_audio.title, 27);
 
 				toRptr[i].last_time = 0;
 			}
@@ -1149,7 +1149,7 @@ void CQnetGateway::ProcessG2Header(const SDSVT &g2buf, const int source_sock)
 				qnDB.UpdateLH(lhcallsign[i].c_str(), lhsfx[i].c_str(), 'A'+i, reflector.c_str());
 			}
 
-			ToRelay.Write(g2buf.title, 56);
+			ToIcom.Write(g2buf.title, 56);
 			nextctrl[i] = 0U;
 
 			/* save the header */
@@ -1244,7 +1244,7 @@ void CQnetGateway::ProcessG2(const ssize_t g2buflen, SDSVT &g2buf, const int sou
 										const unsigned char sync[3] = { 0x55U, 0x2DU, 0x16U };
 										memcpy(dsvt.vasd.voice, sync, 3U);
 									}
-									ToRelay.Write(dsvt.title, 27);
+									ToIcom.Write(dsvt.title, 27);
 								}
 							}
 							else
@@ -1267,7 +1267,7 @@ void CQnetGateway::ProcessG2(const ssize_t g2buflen, SDSVT &g2buf, const int sou
 								g2buf.ctrl = nextctrl[i];
 								nextctrl[i] = (nextctrl[i] + 1U) % 21U;
 							}
-							ToRelay.Write(g2buf.title, 27);
+							ToIcom.Write(g2buf.title, 27);
 							if (source_sock >= 0 && showLastHeard)
 							{
 								std::string smartgroup;
@@ -1333,10 +1333,10 @@ void CQnetGateway::ProcessG2(const ssize_t g2buflen, SDSVT &g2buf, const int sou
 								printf("Re-generating header for streamID=%04x\n", ntohs(g2buf.streamid));
 
 								/* re-generate/send the header */
-								ToRelay.Write(toRptr[i].saved_hdr.title, 56);
+								ToIcom.Write(toRptr[i].saved_hdr.title, 56);
 
 								/* send this audio packet to repeater */
-								ToRelay.Write(g2buf.title, 27);
+								ToIcom.Write(g2buf.title, 27);
 
 								/* time it, in case stream times out */
 								time(&toRptr[i].last_time);
@@ -1615,7 +1615,7 @@ void CQnetGateway::ProcessModem(const ssize_t recvlen, SDSVT &dsvt)
 													dsvt.hdr.rpt1[7] = 'G';
 													calcPFCS(dsvt.title, 56);
 
-													ToRelay.Write(dsvt.title, 56);
+													ToIcom.Write(dsvt.title, 56);
 
 													/* time it, in case stream times out */
 													time(&toRptr[i].last_time);
@@ -1791,7 +1791,7 @@ void CQnetGateway::ProcessModem(const ssize_t recvlen, SDSVT &dsvt)
 							dsvt.hdr.rpt1[7] = 'G';
 							calcPFCS(dsvt.title, 56);
 
-							ToRelay.Write(dsvt.title, 56);
+							ToIcom.Write(dsvt.title, 56);
 
 							/* time it, in case stream times out */
 							time(&toRptr[i].last_time);
@@ -1992,7 +1992,7 @@ void CQnetGateway::ProcessModem(const ssize_t recvlen, SDSVT &dsvt)
 					}
 					else if (toRptr[i].saved_hdr.streamid == dsvt.streamid)  	// or maybe this is cross-banding data
 					{
-						ToRelay.Write(dsvt.title, 27);
+						ToIcom.Write(dsvt.title, 27);
 
 						/* timeit */
 						time(&toRptr[i].last_time);
@@ -2077,11 +2077,7 @@ void CQnetGateway::Process()
 		if (g2_sock[1] >= 0)
 			AddFDSet(max_nfds, g2_sock[1], &fdset);
 		AddFDSet(max_nfds, ToLink.GetFD(), &fdset);
-		for (int i=0; i<3; i++)
-		{
-			if (Rptr.mod[i].defined)
-				AddFDSet(max_nfds, ToRelay.GetFD(), &fdset);
-		}
+		AddFDSet(max_nfds, ToIcom.GetFD(), &fdset);	// we only need to do this once!
 		AddFDSet(max_nfds, FromRemote.GetFD(), &fdset);
 		struct timeval tv;
 		tv.tv_sec = 0;
@@ -2144,13 +2140,13 @@ void CQnetGateway::Process()
 		// process packets coming from local repeater module(s)
 		for (int i=0; i<3; i++)
 		{
-			if (IsRunning() && FD_ISSET(ToRelay.GetFD(), &fdset))
+			if (IsRunning() && FD_ISSET(ToIcom.GetFD(), &fdset))
 			{
 				SDSVT dsvt;
-				const ssize_t len = ToRelay.Read(dsvt.title, 56);
+				const ssize_t len = ToIcom.Read(dsvt.title, 56);
 				if (Rptr.mod[i].defined)
 					ProcessModem(len, dsvt);
-				FD_CLR(ToRelay.GetFD(), &fdset);
+				FD_CLR(ToIcom.GetFD(), &fdset);
 			}
 		}
 	}
@@ -2447,7 +2443,7 @@ void CQnetGateway::PlayFileThread(SECHO &edata)
 	memcpy(dsvt.hdr.urcall, "CQCQCQ  ", 8);
 	calcPFCS(dsvt.title, 56);
 
-	ToRelay.Write(dsvt.title, 56);
+	ToIcom.Write(dsvt.title, 56);
 
 	dsvt.config = 0x20U;
 
@@ -2514,7 +2510,7 @@ void CQnetGateway::PlayFileThread(SECHO &edata)
 			if (i+1 == ambeblocks)
 				dsvt.ctrl |= 0x40U;
 
-			ToRelay.Write(dsvt.title, 27);
+			ToIcom.Write(dsvt.title, 27);
 
 			std::this_thread::sleep_for(std::chrono::milliseconds(TIMING_PLAY_DELAY));
 		}
@@ -2589,7 +2585,7 @@ bool CQnetGateway::Init(char *cfgfile)
 	if (FromRemote.Open(fromremote.c_str()))
 		return true;
 	printf("Connecting to qnistack at %s\n", to_icom.c_str());
-	if (ToRelay.Open(to_icom.c_str(), this))
+	if (ToIcom.Open(to_icom.c_str(), this))
 		return true;
 
 	for (i=0; i<3; i++)
@@ -2791,7 +2787,7 @@ CQnetGateway::~CQnetGateway()
 	for (int i=0; i<3; i++)
 	{
 		if (Rptr.mod[i].defined)
-			ToRelay.Close();
+			ToIcom.Close();
 	}
 
 	if (APRS_ENABLE)
