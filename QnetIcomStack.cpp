@@ -176,59 +176,68 @@ void CQnetIcomStack::Run()
 			if (ntohs(addr.sin_port) != REPEATER_PORT)
 				printf("Unexpected icom port was %u, expected %u.\n", ntohs(addr.sin_port), REPEATER_PORT);
 
-			// acknowledge the packet
-			if (0x73U==dstr.flag[0] && (0x21U==dstr.flag[1] || 0x11U==dstr.flag[1] || 0x0U==dstr.flag[1]))
+			// ***********************************************
+			// START Icom Handshaking
+			if ((10 == len) && (0x72u == dstr.flag[0]))
 			{
-				dstr.flag[0] = 0x72u;
-				dstr.flag[1] = dstr.flag[2] = dstr.remaining = 0;
-				SendToIcom(dstr.title, 10);
+				NEW_REPLY_SEQ = ntohs(dstr.counter);
+				if (NEW_REPLY_SEQ == OLD_REPLY_SEQ) {
+					G2_COUNTER_OUT = NEW_REPLY_SEQ;
+					OLD_REPLY_SEQ = NEW_REPLY_SEQ - 1;
+				} else
+					OLD_REPLY_SEQ = NEW_REPLY_SEQ;
 			}
-
-			if (10 == len)
+			else if (0x73U==dstr.flag[0] && (0x21U==dstr.flag[1] || 0x11U==dstr.flag[1] || 0x0U==dstr.flag[1]))
 			{
-				// handle Icom handshaking
-				if (0x72u == dstr.flag[0])
-				{	// ACK from rptr
-					NEW_REPLY_SEQ = ntohs(dstr.counter);
-					if (NEW_REPLY_SEQ == OLD_REPLY_SEQ) {
-						G2_COUNTER_OUT = NEW_REPLY_SEQ;
-						OLD_REPLY_SEQ = NEW_REPLY_SEQ - 1;
-					} else
-						OLD_REPLY_SEQ = NEW_REPLY_SEQ;
-				}
+				unsigned char buf[10];
+				memcpy(buf, dstr.title, 6);
+				buf[6]=0x72u;
+				memset(buf+7, 0, 3);
+				SendToIcom(buf, 10);
 			}
-			else if ((58 == len || 29 == len) && (0 == memcmp(dstr.title, "DSTR", 4)))
-			{
-				SDSVT dsvt;
-				memcpy(dsvt.title, "DSVT", 4);
-				dsvt.config = (58 == len) ? 0x10u : 0x20u;
-				memset(dsvt.flaga, 0, 3);
-				dsvt.id = 0x20;
-				dsvt.flagb[0] = dstr.vpkt.dst_rptr_id;
-				dsvt.flagb[1] = dstr.vpkt.snd_rptr_id;
-				dsvt.flagb[2] = dstr.vpkt.snd_term_id;
-				dsvt.streamid = dstr.vpkt.streamid;
-				dsvt.ctrl = dstr.vpkt.ctrl;
-				if (58 == len)
-				{
-					if (LOG_QSO)
-					{
-						printf("id=%04x from RPTR count=%u f=%02x%02x%02x icmid=%02x%02x%02x%02x flag=%02x%02x%02x ur=%.8s r1=%.8s r2=%.8s my=%.8s/%.4s\n", ntohs(dstr.vpkt.streamid), ntohs(dstr.counter), dstr.vpkt.icm_id, dstr.vpkt.dst_rptr_id, dstr.vpkt.snd_rptr_id, dstr.vpkt.snd_term_id, dstr.flag[0], dstr.flag[1], dstr.flag[2], dstr.vpkt.hdr.flag[0], dstr.vpkt.hdr.flag[1], dstr.vpkt.hdr.flag[2], dstr.vpkt.hdr.ur, dstr.vpkt.hdr.r1, dstr.vpkt.hdr.r2, dstr.vpkt.hdr.my, dstr.vpkt.hdr.nm);
-					}
-					memcpy(dsvt.hdr.flag, dstr.vpkt.hdr.flag, 41);
-					//memcpy(dsvt.hdr.rpt1, dstr.vpkt.hdr.r2, 8);
-					//memcpy(dsvt.hdr.rpt2, dstr.vpkt.hdr.r1, 8);
-					ToGate.Write(dsvt.title, 56);
+			// END Icom Handshaking
+			// ***********************************************
 
-				}
-				else
-				{
-					if (LOG_QSO && (dstr.vpkt.ctrl & 0x40u))
+			if (0 == memcmp(dstr.title, "DSTR", 4))
+			{
+				if (58 == len || 29 == len)
+				{	// regular packet!
+					SDSVT dsvt;
+					memcpy(dsvt.title, "DSVT", 4);
+					dsvt.config = (58 == len) ? 0x10u : 0x20u;
+					memset(dsvt.flaga, 0, 3);
+					dsvt.id = 0x20;
+					dsvt.flagb[0] = dstr.vpkt.dst_rptr_id;
+					dsvt.flagb[1] = dstr.vpkt.snd_rptr_id;
+					dsvt.flagb[2] = dstr.vpkt.snd_term_id;
+					dsvt.streamid = dstr.vpkt.streamid;
+					dsvt.ctrl = dstr.vpkt.ctrl;
+					if (58 == len)
 					{
-						printf("id=%04x from RPTR count=%u end of transmission\n", ntohs(dstr.vpkt.streamid), ntohs(dstr.counter));
+						if (LOG_QSO)
+						{
+							printf("id=%04x from RPTR count=%u f=%02x%02x%02x icmid=%02x%02x%02x%02x flag=%02x%02x%02x ur=%.8s r1=%.8s r2=%.8s my=%.8s/%.4s\n", ntohs(dstr.vpkt.streamid), ntohs(dstr.counter), dstr.flag[0], dstr.flag[1], dstr.flag[2], dstr.vpkt.icm_id, dstr.vpkt.dst_rptr_id, dstr.vpkt.snd_rptr_id, dstr.vpkt.snd_term_id, dstr.vpkt.hdr.flag[0], dstr.vpkt.hdr.flag[1], dstr.vpkt.hdr.flag[2], dstr.vpkt.hdr.ur, dstr.vpkt.hdr.r1, dstr.vpkt.hdr.r2, dstr.vpkt.hdr.my, dstr.vpkt.hdr.nm);
+						}
+						memcpy(dsvt.hdr.flag, dstr.vpkt.hdr.flag, 3);	// flags
+						memcpy(dsvt.hdr.rpt1, dstr.vpkt.hdr.r1, 8);		// reverse order...
+						memcpy(dsvt.hdr.rpt2, dstr.vpkt.hdr.r2, 8);		// to make it right for the gateway
+						memcpy(dsvt.hdr.urcall, dstr.vpkt.hdr.ur, 22);	// ur, my, nm, pfcs 8+8+4+2==22
+						ToGate.Write(dsvt.title, 56);
+
 					}
-					memcpy(dsvt.vasd.voice, dstr.vpkt.vasd.voice, 12);
-					ToGate.Write(dsvt.title, 27);
+					else
+					{
+						if (LOG_QSO && (dstr.vpkt.ctrl & 0x40u))
+						{
+							printf("id=%04x from RPTR count=%u end of transmission\n", ntohs(dstr.vpkt.streamid), ntohs(dstr.counter));
+						}
+						memcpy(dsvt.vasd.voice, dstr.vpkt.vasd.voice, 12);
+						ToGate.Write(dsvt.title, 27);
+					}
+				}
+				else if (26 == len)
+				{
+					// printf("SPKT: my=%.8s rpt=%.8s\n", dstr.spkt.mycall, dstr.spkt.rpt);
 				}
 			}
 			else if (len < 0)
@@ -269,12 +278,10 @@ void CQnetIcomStack::Run()
 				if (56 == len)
 				{
 					memcpy(dstr.vpkt.hdr.flag, dsvt.hdr.flag, 41);
-					//memcpy(dstr.vpkt.hdr.r1, dsvt.hdr.rpt2, 8);
-					//memcpy(dstr.vpkt.hdr.r2, dsvt.hdr.rpt1, 8);
 					SendToIcom(dstr.title, 58);
 					if (LOG_QSO)
 					{
-						printf("id=%04x to RPTR count=%u f=%02x%02x%02x icmid=%02x%02x%02x%02x flag=%02x%02x%02x ur=%.8s r1=%.8s r2=%.8s my=%.8s/%.4s\n", ntohs(dstr.vpkt.streamid), ntohs(dstr.counter), dstr.vpkt.icm_id, dstr.vpkt.dst_rptr_id, dstr.vpkt.snd_rptr_id, dstr.vpkt.snd_term_id, dstr.flag[0], dstr.flag[1], dstr.flag[2], dstr.vpkt.hdr.flag[0], dstr.vpkt.hdr.flag[1], dstr.vpkt.hdr.flag[2], dstr.vpkt.hdr.ur, dstr.vpkt.hdr.r1, dstr.vpkt.hdr.r2, dstr.vpkt.hdr.my, dstr.vpkt.hdr.nm);
+						printf("id=%04x to RPTR count=%u f=%02x%02x%02x icmid=%02x%02x%02x%02x flag=%02x%02x%02x ur=%.8s r1=%.8s r2=%.8s my=%.8s/%.4s\n", ntohs(dstr.vpkt.streamid), ntohs(dstr.counter), dstr.flag[0], dstr.flag[1], dstr.flag[2], dstr.vpkt.icm_id, dstr.vpkt.dst_rptr_id, dstr.vpkt.snd_rptr_id, dstr.vpkt.snd_term_id, dstr.vpkt.hdr.flag[0], dstr.vpkt.hdr.flag[1], dstr.vpkt.hdr.flag[2], dstr.vpkt.hdr.ur, dstr.vpkt.hdr.r1, dstr.vpkt.hdr.r2, dstr.vpkt.hdr.my, dstr.vpkt.hdr.nm);
 					}
 				}
 				else
