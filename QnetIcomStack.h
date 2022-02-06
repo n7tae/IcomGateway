@@ -54,9 +54,10 @@ private:
 	// config data
 	std::string LOCAL_IP, REPEATER_IP;
 	unsigned short REPEATER_PORT;
-	int available_module;
+	bool LOG_QSO;
 
 	// parameters
+	int available_module;
 	int icom_fd, gateway_fd;
 	CSockAddress icom_sock;
 	CSockAddress icom_stack;

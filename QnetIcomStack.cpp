@@ -211,14 +211,23 @@ void CQnetIcomStack::Run()
 				dsvt.ctrl = dstr.vpkt.ctrl;
 				if (58 == len)
 				{
+					if (LOG_QSO)
+					{
+						printf("id=%04x from RPTR count=%u f=%02x%02x%02x icmid=%02x%02x%02x%02x flag=%02x%02x%02x ur=%.8s r1=%.8s r2=%.8s my=%.8s/%.4s\n", ntohs(dstr.vpkt.streamid), ntohs(dstr.counter), dstr.vpkt.icm_id, dstr.vpkt.dst_rptr_id, dstr.vpkt.snd_rptr_id, dstr.vpkt.snd_term_id, dstr.flag[0], dstr.flag[1], dstr.flag[2], dstr.vpkt.hdr.flag[0], dstr.vpkt.hdr.flag[1], dstr.vpkt.hdr.flag[2], dstr.vpkt.hdr.ur, dstr.vpkt.hdr.r1, dstr.vpkt.hdr.r2, dstr.vpkt.hdr.my, dstr.vpkt.hdr.nm);
+					}
 					memcpy(dsvt.hdr.flag, dstr.vpkt.hdr.flag, 41);
-					memcpy(dsvt.hdr.rpt1, dstr.vpkt.hdr.r2, 8);
-					memcpy(dsvt.hdr.rpt2, dstr.vpkt.hdr.r1, 8);
+					//memcpy(dsvt.hdr.rpt1, dstr.vpkt.hdr.r2, 8);
+					//memcpy(dsvt.hdr.rpt2, dstr.vpkt.hdr.r1, 8);
 					ToGate.Write(dsvt.title, 56);
+
 				}
 				else
 				{
-					memcpy(dsvt.vasd.voice, dstr.vpkt.vasd.text, 12);
+					if (LOG_QSO && (dstr.vpkt.ctrl & 0x40u))
+					{
+						printf("id=%04x from RPTR count=%u end of transmission\n", ntohs(dstr.vpkt.streamid), ntohs(dstr.counter));
+					}
+					memcpy(dsvt.vasd.voice, dstr.vpkt.vasd.voice, 12);
 					ToGate.Write(dsvt.title, 27);
 				}
 			}
@@ -263,11 +272,19 @@ void CQnetIcomStack::Run()
 					//memcpy(dstr.vpkt.hdr.r1, dsvt.hdr.rpt2, 8);
 					//memcpy(dstr.vpkt.hdr.r2, dsvt.hdr.rpt1, 8);
 					SendToIcom(dstr.title, 58);
+					if (LOG_QSO)
+					{
+						printf("id=%04x to RPTR count=%u f=%02x%02x%02x icmid=%02x%02x%02x%02x flag=%02x%02x%02x ur=%.8s r1=%.8s r2=%.8s my=%.8s/%.4s\n", ntohs(dstr.vpkt.streamid), ntohs(dstr.counter), dstr.vpkt.icm_id, dstr.vpkt.dst_rptr_id, dstr.vpkt.snd_rptr_id, dstr.vpkt.snd_term_id, dstr.flag[0], dstr.flag[1], dstr.flag[2], dstr.vpkt.hdr.flag[0], dstr.vpkt.hdr.flag[1], dstr.vpkt.hdr.flag[2], dstr.vpkt.hdr.ur, dstr.vpkt.hdr.r1, dstr.vpkt.hdr.r2, dstr.vpkt.hdr.my, dstr.vpkt.hdr.nm);
+					}
 				}
 				else
 				{
 					memcpy(dstr.vpkt.vasd.voice, dsvt.vasd.voice, 12);
 					SendToIcom(dstr.title, 29);
+					if (LOG_QSO && (dstr.vpkt.ctrl & 0x40u))
+					{
+						printf("id=%04x to RPTR count=%u end of transmission\n", ntohs(dstr.vpkt.streamid), ntohs(dstr.counter));
+					}
 				}
 			}
 			else if (len < 0)
@@ -331,6 +348,7 @@ bool CQnetIcomStack::ReadConfig(const char *cfgFile)
 		}
 	}
 
+	cfg.GetValue("log_qso", estr, LOG_QSO);
 	cfg.GetValue("gateway_to_icom", estr, togate, 1, FILENAME_MAX);
 	cfg.GetValue("icom_internal_ip", estr, LOCAL_IP, 7, IP_SIZE);
 	cfg.GetValue("icom_external_ip", estr, REPEATER_IP, 7, IP_SIZE);
