@@ -219,13 +219,13 @@ void CQnetIcomStack::Run()
 							printf("id=%04x from RPTR count=%u f=%02x%02x%02x icmid=%02x%02x%02x%02x flag=%02x%02x%02x ur=%.8s r1=%.8s r2=%.8s my=%.8s/%.4s\n", ntohs(dstr.vpkt.streamid), ntohs(dstr.counter), dstr.flag[0], dstr.flag[1], dstr.flag[2], dstr.vpkt.icm_id, dstr.vpkt.dst_rptr_id, dstr.vpkt.snd_rptr_id, dstr.vpkt.snd_term_id, dstr.vpkt.hdr.flag[0], dstr.vpkt.hdr.flag[1], dstr.vpkt.hdr.flag[2], dstr.vpkt.hdr.ur, dstr.vpkt.hdr.r1, dstr.vpkt.hdr.r2, dstr.vpkt.hdr.my, dstr.vpkt.hdr.nm);
 						}
 						memcpy(dsvt.hdr.flag, dstr.vpkt.hdr.flag, 3);	// flags
-						memcpy(dsvt.hdr.rpt1, dstr.vpkt.hdr.r1, 8);		// reverse order...
-						memcpy(dsvt.hdr.rpt2, dstr.vpkt.hdr.r2, 8);		// to make it right for the gateway
+						memcpy(dsvt.hdr.rpt1, dstr.vpkt.hdr.r2, 8);		// reverse order...
+						memcpy(dsvt.hdr.rpt2, dstr.vpkt.hdr.r1, 8);		// to make it right for the gateway
 						memcpy(dsvt.hdr.urcall, dstr.vpkt.hdr.ur, 22);	// ur, my, nm, pfcs 8+8+4+2==22
 						ToGate.Write(dsvt.title, 56);
 
 					}
-					else
+					else // 29 == len
 					{
 						if (LOG_QSO && (dstr.vpkt.ctrl & 0x40u))
 						{
@@ -270,9 +270,9 @@ void CQnetIcomStack::Run()
 				dstr.flag[2] = 0x00u;
 				dstr.remaining = (56 == len) ? 48 : 19;
 				dstr.vpkt.icm_id = 0x20u;
-				dstr.vpkt.dst_rptr_id = dsvt.flagb[0];
-				dstr.vpkt.snd_rptr_id = dsvt.flagb[1];
-				dstr.vpkt.snd_term_id = dsvt.flagb[2];
+				dstr.vpkt.dst_rptr_id = 0x00u;
+				dstr.vpkt.snd_rptr_id = 0x01u;
+				dstr.vpkt.snd_term_id = (dsvt.hdr.rpt1[7] == 'A') ? 0x03u : dsvt.hdr.rpt1[7] - 'A';
 				dstr.vpkt.streamid = dsvt.streamid;
 				dstr.vpkt.ctrl = dsvt.ctrl;
 				if (56 == len)

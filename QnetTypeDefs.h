@@ -21,7 +21,7 @@
 #pragma pack(push, 1)	// used internally by Icom stacks
 using SDSTR = struct dstr_tag
 {
-	unsigned char title[4];	//  0	"DSTR"
+	unsigned char title[4];		//  0	"DSTR"
 	unsigned short counter;		//  4
 	unsigned char flag[3];		//  6	{ 0x73, 0x12, 0x00 }
 	unsigned char remaining;	//  9	the number of bytes left in the packet
@@ -45,8 +45,8 @@ using SDSTR = struct dstr_tag
 				struct
 				{
 					unsigned char flag[3];	// 17
-					unsigned char r2[8];	// 28
-					unsigned char r1[8];	// 20
+					unsigned char r1[8];	// 28
+					unsigned char r2[8];	// 20
 					unsigned char ur[8];	// 36
 					unsigned char my[8];	// 44
 					unsigned char nm[4];	// 52
