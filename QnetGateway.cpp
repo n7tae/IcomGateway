@@ -1131,7 +1131,7 @@ void CQnetGateway::ProcessG2Header(const SDSVT &g2buf, const int source_sock)
 			sdin[i].Init();	// with a header, we should reset the Sd structs
 			if (LOG_QSO)
 			{
-				printf("id=%04x flags=%02x:%02x:%02x ur=%.8s r1=%.8s r2=%.8s my=%.8s/%.4s ", ntohs(g2buf.streamid), g2buf.hdr.flag[0], g2buf.hdr.flag[1], g2buf.hdr.flag[2], g2buf.hdr.urcall, g2buf.hdr.rpt1, g2buf.hdr.rpt2, g2buf.hdr.mycall, g2buf.hdr.sfx);
+				printf("id=%04x b=%02x%02x%02x f=%02x%02x%02x ur=%.8s r1=%.8s r2=%.8s my=%.8s/%.4s ", ntohs(g2buf.streamid), g2buf.flagb[0], g2buf.flagb[1], g2buf.flagb[2], g2buf.hdr.flag[0], g2buf.hdr.flag[1], g2buf.hdr.flag[2], g2buf.hdr.urcall, g2buf.hdr.rpt1, g2buf.hdr.rpt2, g2buf.hdr.mycall, g2buf.hdr.sfx);
 				if (source_sock >= 0)
 					printf("IP=[%s]:%u\n", fromDstar.GetAddress(), fromDstar.GetPort());
 				else
@@ -1352,7 +1352,7 @@ void CQnetGateway::ProcessG2(const ssize_t g2buflen, SDSVT &g2buf, const int sou
 	}
 }
 
-void CQnetGateway::ProcessModem(const ssize_t recvlen, SDSVT &dsvt)
+void CQnetGateway::ProcessIcom(const ssize_t recvlen, SDSVT &dsvt)
 {
 	char tempfile[FILENAME_MAX];
 
@@ -1363,7 +1363,7 @@ void CQnetGateway::ProcessModem(const ssize_t recvlen, SDSVT &dsvt)
 			if (recvlen == 56)
 			{
 				if (LOG_QSO)
-					printf("id=%04x start RPTR flag0=%02x ur=%.8s r1=%.8s r2=%.8s my=%.8s/%.4s\n", ntohs(dsvt.streamid), dsvt.hdr.flag[0],  dsvt.hdr.urcall, dsvt.hdr.rpt1, dsvt.hdr.rpt2, dsvt.hdr.mycall, dsvt.hdr.sfx);
+					printf("id=%04x start RPTR b=%02x%02x%02x f=%02x%02x%02x ur=%.8s r1=%.8s r2=%.8s my=%.8s/%.4s\n", ntohs(dsvt.streamid), dsvt.flagb[0], dsvt.flagb[1], dsvt.flagb[2], dsvt.hdr.flag[0], dsvt.hdr.flag[1], dsvt.hdr.flag[2], dsvt.hdr.urcall, dsvt.hdr.rpt1, dsvt.hdr.rpt2, dsvt.hdr.mycall, dsvt.hdr.sfx);
 				if (0==memcmp(dsvt.hdr.rpt1, "DIRECT  ", 8) && 0==memcmp(dsvt.hdr.rpt2, "DIRECT  ", 8))  	// DIRECT mode???
 				{
 					memcpy(dsvt.hdr.rpt1, OWNER.c_str(), 7);
@@ -2107,7 +2107,7 @@ void CQnetGateway::Process()
 		{
 			SDSVT dsvt;
 			const ssize_t len = FromRemote.Read(dsvt.title, 56);
-			ProcessModem(len, dsvt);
+			ProcessIcom(len, dsvt);
 			FD_CLR(FromRemote.GetFD(), &fdset);
 		}
 
@@ -2142,7 +2142,7 @@ void CQnetGateway::Process()
 		{
 			SDSVT dsvt;
 			const ssize_t len = ToIcom.Read(dsvt.title, 56);
-			ProcessModem(len, dsvt);
+			ProcessIcom(len, dsvt);
 			FD_CLR(ToIcom.GetFD(), &fdset);
 		}
 	}
