@@ -37,7 +37,7 @@
 #include "QnetTypeDefs.h"
 #include "QnetConfigure.h"
 
-#define RELAY_VERSION "20202"
+#define RELAY_VERSION "20209"
 
 CQnetIcomStack::CQnetIcomStack() :
 	G2_COUNTER_OUT(0)
@@ -176,32 +176,18 @@ void CQnetIcomStack::Run()
 			if (ntohs(addr.sin_port) != REPEATER_PORT)
 				printf("Unexpected icom port was %u, expected %u.\n", ntohs(addr.sin_port), REPEATER_PORT);
 
-			// ***********************************************
-			// START Icom Handshaking
-			if ((10 == len) && (0x72u == dstr.flag[0]))
-			{
-				NEW_REPLY_SEQ = ntohs(dstr.counter);
-				if (NEW_REPLY_SEQ == OLD_REPLY_SEQ) {
-					G2_COUNTER_OUT = NEW_REPLY_SEQ;
-					OLD_REPLY_SEQ = NEW_REPLY_SEQ - 1;
-				} else
-					OLD_REPLY_SEQ = NEW_REPLY_SEQ;
-			}
-			else if (0x73U==dstr.flag[0] && (0x21U==dstr.flag[1] || 0x11U==dstr.flag[1] || 0x0U==dstr.flag[1]))
-			{
-				unsigned char buf[10];
-				memcpy(buf, dstr.title, 6);
-				buf[6]=0x72u;
-				memset(buf+7, 0, 3);
-				SendToIcom(buf, 10);
-			}
-			// END Icom Handshaking
-			// ***********************************************
-
 			if (0 == memcmp(dstr.title, "DSTR", 4))
 			{
-				if (58 == len || 29 == len)
+				if ((58 == len || 29 == len) && (0x73u == dstr.flag[0]) && (0x12u == dstr.flag[1]) && (0x0u == dstr.flag[2]))
 				{	// regular packet!
+					// first: acknowledge the packet
+					unsigned char ackn[10];
+					memcpy(ackn, dstr.title, 6);
+					ackn[6] = 0x72u;
+					memset(ackn+7, 0, 3);
+					SendToIcom(ackn, 10);
+
+					// finally: process the packet and send it on...
 					SDSVT dsvt;
 					memcpy(dsvt.title, "DSVT", 4);
 					dsvt.config = (58 == len) ? 0x10u : 0x20u;
@@ -237,7 +223,24 @@ void CQnetIcomStack::Run()
 				}
 				else if (26 == len)
 				{
-					printf("SPKT: my=%.8s rpt=%.8s\n", dstr.spkt.mycall, dstr.spkt.rpt);
+					// printf("SPKT: my=%.8s rpt=%.8s\n", dstr.spkt.mycall, dstr.spkt.rpt);
+				}
+				else if ((10 == len) && (0x72u == dstr.flag[0]))
+				{
+					NEW_REPLY_SEQ = ntohs(dstr.counter);
+					if (NEW_REPLY_SEQ == OLD_REPLY_SEQ) {
+						G2_COUNTER_OUT = NEW_REPLY_SEQ;
+						OLD_REPLY_SEQ = NEW_REPLY_SEQ - 1;
+					} else
+						OLD_REPLY_SEQ = NEW_REPLY_SEQ;
+				}
+				else if (0x73U==dstr.flag[0] && (0x21U==dstr.flag[1] || 0x11U==dstr.flag[1] || 0x0U==dstr.flag[1]))
+				{
+					unsigned char buf[10];
+					memcpy(buf, dstr.title, 6);
+					buf[6]=0x72u;
+					memset(buf+7, 0, 3);
+					SendToIcom(buf, 10);
 				}
 			}
 			else if (len < 0)
