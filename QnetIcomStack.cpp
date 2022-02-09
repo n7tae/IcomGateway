@@ -237,7 +237,7 @@ void CQnetIcomStack::Run()
 				}
 				else if (26 == len)
 				{
-					// printf("SPKT: my=%.8s rpt=%.8s\n", dstr.spkt.mycall, dstr.spkt.rpt);
+					printf("SPKT: my=%.8s rpt=%.8s\n", dstr.spkt.mycall, dstr.spkt.rpt);
 				}
 			}
 			else if (len < 0)
