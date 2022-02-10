@@ -37,7 +37,7 @@
 #include "QnetTypeDefs.h"
 #include "QnetConfigure.h"
 
-#define RELAY_VERSION "20209"
+#define RELAY_VERSION "20210"
 
 CQnetIcomStack::CQnetIcomStack() :
 	G2_COUNTER_OUT(0)
@@ -242,6 +242,10 @@ void CQnetIcomStack::Run()
 					memset(buf+7, 0, 3);
 					SendToIcom(buf, 10);
 				}
+				else
+				{
+					Dump("Unexpected packet from Icom repeater:", dstr.title, len);
+				}
 			}
 			else if (len < 0)
 			{
@@ -254,7 +258,7 @@ void CQnetIcomStack::Run()
 			}
 			else
 			{
-				Dump("Unexpected packet from Icom reapeater", dstr.title, len);
+				Dump("Unexpected packet from Icom reapeater:", dstr.title, len);
 			}
 		}
 
