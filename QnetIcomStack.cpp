@@ -39,8 +39,7 @@
 
 #define RELAY_VERSION "20210"
 
-CQnetIcomStack::CQnetIcomStack() :
-	G2_COUNTER_OUT(0)
+CQnetIcomStack::CQnetIcomStack() : G2_COUNTER_OUT(0)
 {
 }
 
@@ -80,35 +79,23 @@ void CQnetIcomStack::IcomInit()
 	unsigned char buf[500];
 	memset(buf, 0, 10);
 	memcpy(buf, "INIT", 4);
-	buf[6] = 0x73U;
-	// we can use the module a band_addr for INIT
+	buf[6] = 0x73u;
 	SendToIcom(buf, 10);
 	printf("Initializing the Icom controller...\n");
 
 	// get the acknowledgement from the ICOM Stack
-	// do this with 100ms select() so we can Control-C abort cleanly
-	CSockAddress addr;
 	while (IsRunning()) {
-		fd_set fdset;
-		FD_ZERO(&fdset);
-		FD_SET(icom_fd, &fdset);
-		struct timeval tv;
-		tv.tv_sec = 0;
-		tv.tv_usec = 100000;
-		auto rval = select(icom_fd+1, &fdset, NULL, NULL, &tv);
-		if (rval > 0)
-		{
-			socklen_t reclen;
-			int recvlen = recvfrom(icom_fd, buf, 500, 0, addr.GetPointer(), &reclen);
-			Dump("Got a packet from the stack:", buf, recvlen);
-			if (10==recvlen && 0==memcmp(buf, "INIT", 4) && 0x72U==buf[6] && 0x0U==buf[7]) {
-				OLD_REPLY_SEQ = 256U * buf[4] + buf[5];
-				NEW_REPLY_SEQ = OLD_REPLY_SEQ + 1;
-				G2_COUNTER_OUT = NEW_REPLY_SEQ;
-				printf("SYNC: old=%u, new=%u\n", OLD_REPLY_SEQ, NEW_REPLY_SEQ);
-				break;
-			}
+		CSockAddress addr(AF_INET);
+		socklen_t addrlen = addr.GetSize();
+		int recvlen = recvfrom(icom_fd, buf, 500, 0, addr.GetPointer(), &addrlen);
+		if (10==recvlen && 0==memcmp(buf, "INIT", 4) && 0x72U==buf[6] && 0x0U==buf[7]) {
+			OLD_REPLY_SEQ = 256u * buf[4] + buf[5];
+			NEW_REPLY_SEQ = OLD_REPLY_SEQ + 1;
+			G2_COUNTER_OUT = NEW_REPLY_SEQ;
+			printf("Detected the Icom controller! Counter=%u\n", G2_COUNTER_OUT);
+			break;
 		}
+		std::this_thread::sleep_for(std::chrono::milliseconds(100));
 	}
 }
 
