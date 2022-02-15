@@ -37,7 +37,7 @@
 #include "QnetTypeDefs.h"
 #include "QnetConfigure.h"
 
-#define RELAY_VERSION "20210"
+#define RELAY_VERSION "20214"
 
 CQnetIcomStack::CQnetIcomStack() : G2_COUNTER_OUT(0)
 {
@@ -165,7 +165,7 @@ void CQnetIcomStack::Run()
 
 			if (0 == memcmp(dstr.title, "DSTR", 4))
 			{
-				if ((58 == len || 29 == len) && (0x73u == dstr.flag[0]) && (0x12u == dstr.flag[1]) && (0x0u == dstr.flag[2]))
+				if ((58 == len || 32 == len || 29 == len) && (0x73u == dstr.flag[0]) && (0x12u == dstr.flag[1]) && (0x0u == dstr.flag[2]))
 				{	// regular packet!
 					// first: acknowledge the packet
 					unsigned char ackn[10];
@@ -198,13 +198,13 @@ void CQnetIcomStack::Run()
 						ToGate.Write(dsvt.title, 56);
 
 					}
-					else // 29 == len
+					else // 29==len or 32==len
 					{
 						if (LOG_QSO && (dstr.vpkt.ctrl & 0x40u))
 						{
 							printf("id=%04x from RPTR count=%u end of transmission\n", ntohs(dstr.vpkt.streamid), ntohs(dstr.counter));
 						}
-						memcpy(dsvt.vasd.voice, dstr.vpkt.vasd.voice, 12);
+						memcpy(dsvt.vasd.voice, (29==len)?dstr.vpkt.vasd.voice:dstr.vpkt.vasd1.voice, 12);
 						ToGate.Write(dsvt.title, 27);
 					}
 				}
@@ -271,7 +271,10 @@ void CQnetIcomStack::Run()
 				dstr.vpkt.ctrl = dsvt.ctrl;
 				if (56 == len)
 				{
-					memcpy(dstr.vpkt.hdr.flag, dsvt.hdr.flag, 41);
+					memcpy(dstr.vpkt.hdr.flag, dsvt.hdr.flag, 3);
+					memcpy(dstr.vpkt.hdr.r1, dsvt.hdr.rpt2, 8);
+					memcpy(dstr.vpkt.hdr.r2, dsvt.hdr.rpt1, 8);
+					memcpy(dstr.vpkt.hdr.ur, dsvt.hdr.urcall, 22); // ur, my, nm, pfcs 8 + 8 + 4 + 2
 					SendToIcom(dstr.title, 58);
 					if (LOG_QSO)
 					{
