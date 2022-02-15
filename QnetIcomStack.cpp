@@ -271,10 +271,11 @@ void CQnetIcomStack::Run()
 				dstr.vpkt.ctrl = dsvt.ctrl;
 				if (56 == len)
 				{
-					memcpy(dstr.vpkt.hdr.flag, dsvt.hdr.flag, 3);
-					memcpy(dstr.vpkt.hdr.r1, dsvt.hdr.rpt2, 8);
-					memcpy(dstr.vpkt.hdr.r2, dsvt.hdr.rpt1, 8);
-					memcpy(dstr.vpkt.hdr.ur, dsvt.hdr.urcall, 22); // ur, my, nm, pfcs 8 + 8 + 4 + 2
+					memcpy(dstr.vpkt.hdr.flag, dsvt.hdr.flag, 41);
+					// memcpy(dstr.vpkt.hdr.flag, dsvt.hdr.flag, 3);
+					// memcpy(dstr.vpkt.hdr.r1, dsvt.hdr.rpt2, 8);
+					// memcpy(dstr.vpkt.hdr.r2, dsvt.hdr.rpt1, 8);
+					// memcpy(dstr.vpkt.hdr.ur, dsvt.hdr.urcall, 22); // ur, my, nm, pfcs 8 + 8 + 4 + 2
 					SendToIcom(dstr.title, 58);
 					if (LOG_QSO)
 					{
