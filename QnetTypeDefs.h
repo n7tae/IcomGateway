@@ -35,9 +35,7 @@ using SDSTR = struct dstr_tag
 		struct
 		{
 			unsigned char icm_id;		// 10
-			unsigned char dst_rptr_id;	// 11
-			unsigned char snd_rptr_id;	// 12
-			unsigned char snd_term_id;	// 13
+			unsigned char flagb[3];	    // 11
 			unsigned short streamid;	// 14
 			unsigned char ctrl;			// 16	sequence number hdr=0, voice%21, end|=0x40
 			union

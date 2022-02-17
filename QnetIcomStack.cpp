@@ -180,16 +180,14 @@ void CQnetIcomStack::Run()
 					dsvt.config = (58 == len) ? 0x10u : 0x20u;
 					memset(dsvt.flaga, 0, 3);
 					dsvt.id = 0x20;
-					dsvt.flagb[0] = dstr.vpkt.dst_rptr_id;
-					dsvt.flagb[1] = dstr.vpkt.snd_rptr_id;
-					dsvt.flagb[2] = dstr.vpkt.snd_term_id;
+					memcpy(dsvt.flagb, dstr.vpkt.flagb, 3);
 					dsvt.streamid = dstr.vpkt.streamid;
 					dsvt.ctrl = dstr.vpkt.ctrl;
 					if (58 == len)
 					{
 						if (LOG_QSO)
 						{
-							printf("id=%04x from RPTR count=%u f=%02x%02x%02x icmid=%02x%02x%02x%02x flag=%02x%02x%02x ur=%.8s r1=%.8s r2=%.8s my=%.8s/%.4s\n", ntohs(dstr.vpkt.streamid), ntohs(dstr.counter), dstr.flag[0], dstr.flag[1], dstr.flag[2], dstr.vpkt.icm_id, dstr.vpkt.dst_rptr_id, dstr.vpkt.snd_rptr_id, dstr.vpkt.snd_term_id, dstr.vpkt.hdr.flag[0], dstr.vpkt.hdr.flag[1], dstr.vpkt.hdr.flag[2], dstr.vpkt.hdr.ur, dstr.vpkt.hdr.r1, dstr.vpkt.hdr.r2, dstr.vpkt.hdr.my, dstr.vpkt.hdr.nm);
+							printf("id=%04x from RPTR count=%u f=%02x%02x%02x icmid=%02x%02x%02x%02x flag=%02x%02x%02x ur=%.8s r1=%.8s r2=%.8s my=%.8s/%.4s\n", ntohs(dstr.vpkt.streamid), ntohs(dstr.counter), dstr.flag[0], dstr.flag[1], dstr.flag[2], dstr.vpkt.icm_id, dstr.vpkt.flagb[0], dstr.vpkt.flagb[1], dstr.vpkt.flagb[2], dstr.vpkt.hdr.flag[0], dstr.vpkt.hdr.flag[1], dstr.vpkt.hdr.flag[2], dstr.vpkt.hdr.ur, dstr.vpkt.hdr.r1, dstr.vpkt.hdr.r2, dstr.vpkt.hdr.my, dstr.vpkt.hdr.nm);
 						}
 						memcpy(dsvt.hdr.flag, dstr.vpkt.hdr.flag, 3);	// flags
 						memcpy(dsvt.hdr.rpt1, dstr.vpkt.hdr.r2, 8);		// reverse order...
@@ -264,27 +262,18 @@ void CQnetIcomStack::Run()
 				dstr.flag[2] = 0x00u;
 				dstr.remaining = (56 == len) ? 48 : 19;
 				dstr.vpkt.icm_id = 0x20u;
-				dstr.vpkt.dst_rptr_id = 0x00u;
-				dstr.vpkt.snd_rptr_id = 0x01u;
-				dstr.vpkt.snd_term_id = (dsvt.hdr.rpt1[7] == 'A') ? 0x03u : dsvt.hdr.rpt1[7] - 'A';
-				dstr.vpkt.streamid = dsvt.streamid;
-				dstr.vpkt.ctrl = dsvt.ctrl;
 				if (56 == len)
 				{
-					memcpy(dstr.vpkt.hdr.flag, dsvt.hdr.flag, 41);
-					// memcpy(dstr.vpkt.hdr.flag, dsvt.hdr.flag, 3);
-					// memcpy(dstr.vpkt.hdr.r1, dsvt.hdr.rpt2, 8);
-					// memcpy(dstr.vpkt.hdr.r2, dsvt.hdr.rpt1, 8);
-					// memcpy(dstr.vpkt.hdr.ur, dsvt.hdr.urcall, 22); // ur, my, nm, pfcs 8 + 8 + 4 + 2
+					memcpy(dstr.vpkt.flagb, dsvt.flagb, 47);
 					SendToIcom(dstr.title, 58);
 					if (LOG_QSO)
 					{
-						printf("id=%04x to RPTR count=%u f=%02x%02x%02x icmid=%02x%02x%02x%02x flag=%02x%02x%02x ur=%.8s r1=%.8s r2=%.8s my=%.8s/%.4s\n", ntohs(dstr.vpkt.streamid), ntohs(dstr.counter), dstr.flag[0], dstr.flag[1], dstr.flag[2], dstr.vpkt.icm_id, dstr.vpkt.dst_rptr_id, dstr.vpkt.snd_rptr_id, dstr.vpkt.snd_term_id, dstr.vpkt.hdr.flag[0], dstr.vpkt.hdr.flag[1], dstr.vpkt.hdr.flag[2], dstr.vpkt.hdr.ur, dstr.vpkt.hdr.r1, dstr.vpkt.hdr.r2, dstr.vpkt.hdr.my, dstr.vpkt.hdr.nm);
+						printf("id=%04x to RPTR count=%u f=%02x%02x%02x icmid=%02x%02x%02x%02x flag=%02x%02x%02x ur=%.8s r1=%.8s r2=%.8s my=%.8s/%.4s\n", ntohs(dstr.vpkt.streamid), ntohs(dstr.counter), dstr.flag[0], dstr.flag[1], dstr.flag[2], dstr.vpkt.icm_id, dstr.vpkt.flagb[0], dstr.vpkt.flagb[1], dstr.vpkt.flagb[2], dstr.vpkt.hdr.flag[0], dstr.vpkt.hdr.flag[1], dstr.vpkt.hdr.flag[2], dstr.vpkt.hdr.ur, dstr.vpkt.hdr.r1, dstr.vpkt.hdr.r2, dstr.vpkt.hdr.my, dstr.vpkt.hdr.nm);
 					}
 				}
 				else
 				{
-					memcpy(dstr.vpkt.vasd.voice, dsvt.vasd.voice, 12);
+					memcpy(dstr.vpkt.flagb, dsvt.flagb, 18);
 					SendToIcom(dstr.title, 29);
 					if (LOG_QSO && (dstr.vpkt.ctrl & 0x40u))
 					{
