@@ -54,7 +54,7 @@
 #include "QnetLink.h"
 #include "Utilities.h"
 
-#define LINK_VERSION "QnetLink-607"
+#define LINK_VERSION "20223"
 #ifndef BIN_DIR
 #define BIN_DIR "/usr/local/bin"
 #endif
@@ -385,8 +385,9 @@ void CQnetLink::RptrAckThread(char *arg)
 	dsvt.flaga[0] = dsvt.flaga[1] = dsvt.flaga[2]  = 0x0;
 
 	dsvt.id  = 0x20;
-	dsvt.flagb[0] =dsvt.flagb[2]  = 0x0;
+	dsvt.flagb[0] = 0x0;
 	dsvt.flagb[1] = 0x1;
+	dsvt.flagb[2] = ('A' == from_mod) ? 0x3 : from_mod - 'A';
 
 	dsvt.streamid = htons(streamid_raw);
 	dsvt.ctrl = 0x80;
@@ -3456,12 +3457,15 @@ void CQnetLink::PlayAudioNotifyThread(char *msg)
 	snprintf(edata.file, FILENAME_MAX, "%s/%s", announce_dir.c_str(), msg+2);
 
 	memcpy(edata.header.title, "DSVT", 4);
-	edata.header.config = 0x10U;
-	edata.header.flaga[0] = edata.header.flaga[1] = edata.header.flaga[2] = 0x0U;
-	edata.header.id = 0x20;
+	edata.header.config = 0x10u;
+	edata.header.flaga[0] = edata.header.flaga[1] = edata.header.flaga[2] = 0x0u;
+	edata.header.id = 0x20u;
+	edata.header.flagb[0] = 0x0u;
+	edata.header.flagb[1] = 0x1u;
+	edata.header.flagb[2] = ('A' == msg[0]) ? 0x3u : msg[0] - 'A';
 	edata.header.streamid = Random.NewStreamID();
-	edata.header.ctrl = 0x80U;
-	edata.header.hdr.flag[0] = edata.header.hdr.flag[1] = edata.header.hdr.flag[2] = 0x0U;
+	edata.header.ctrl = 0x80u;
+	edata.header.hdr.flag[0] = edata.header.hdr.flag[1] = edata.header.hdr.flag[2] = 0x0u;
 	memcpy(edata.header.hdr.rpt1, owner.c_str(), CALL_SIZE);
 	edata.header.hdr.rpt1[7] = msg[0];
 	memcpy(edata.header.hdr.rpt2, owner.c_str(), CALL_SIZE);
