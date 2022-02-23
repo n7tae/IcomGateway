@@ -54,7 +54,7 @@
 #define CFG_DIR "/usr/local/etc"
 #endif
 
-const std::string GW_VERSION("ICOMGateway-20202");
+const std::string GW_VERSION("20223");
 
 int CQnetGateway::FindIndex(const int i) const
 {
@@ -1735,7 +1735,7 @@ void CQnetGateway::ProcessIcom(const ssize_t recvlen, SDSVT &dsvt)
 
 							recd[i].fd = open(tempfile, O_CREAT | O_WRONLY | O_EXCL | O_TRUNC | O_APPEND, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
 							if (recd[i].fd < 0)
-								printf("Failed to create file %s for echotest\n", tempfile);
+								printf("Failed to create file %s for echotest: %s\n", tempfile, strerror(errno));
 							else
 							{
 								strcpy(recd[i].file, tempfile);
