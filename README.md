@@ -14,7 +14,7 @@ IcomGateway is dual-stack capable. This means it can simultaneously connect to i
 To get started, clone this software to your Linux device:
 
 ```bash
-git clone git://github.com/n7tae/IcomGateway.git
+git clone https://github.com/n7tae/IcomGateway.git
 ```
 
 Then look to the CONFIG+INSTALL file for more information.
