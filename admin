@@ -299,7 +299,7 @@ if [ -e qn.cfg ]; then
 	fi
 else
 	echo "ERROR: can't find the qn.cfg configuration file!"
-	echo "You can use ./qnconfig to create your config file."
+	echo "You can use ./config to create your config file."
 	exit 1
 fi
 

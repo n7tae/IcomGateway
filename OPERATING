@@ -21,12 +21,12 @@ I have substantially modified (and hopefully simplified) the configuration
 of this software, now, modules IcomGateway, QnetLink, QnetDVAP and QnetDVRPTR
 all use a single configuration file. Further, and this is the exciting
 part, NEARLY ALL of the parameters these modules need have a useful
-default value. If the default value is acceptible to you (and it
+default value. If the default value is acceptable to you (and it
 probably will be) then you only need to specify what you need to change.
 
 
 This means that for most users, you will only need to specify a few
-parameters. In addtion, there is a new script, qnconfig to help you easily
+parameters. In addition, there is a new script, config to help you easily
 build your configuration file, qn.cfg.
 
 Some other features are discussed below and are pretty much directly
@@ -42,7 +42,7 @@ G2_ircDDB adapted from the OpenG2
 
 IcomGateway supports the following commands in YRCALL
 
-Note: In the commands that folow, _ is a SPACE.
+Note: In the commands that follow, _ is a SPACE.
 
 1)
 For Echotest/playback.
@@ -88,10 +88,10 @@ given. This automatic re-linking can be disabled with:
 module_x_auto_link=false
 
 in your configuration file, qn.cfg. Here the "x" is the module, "a", "b"
-or "c". This variable can be set in the qnconfig if executing in
+or "c". This variable can be set in the config if executing in
 expert mode:
 
-./qnconfig expert
+./config expert
 
 Note about linking:
 After linking succeeds, set YRCALL=CQCQCQ because your audio will go to the
@@ -261,32 +261,6 @@ You may be thinking why did we put all this source code inside QnetLink
 instead of putting it all inside the Gateway software IcomGateway.
 Having divided the functionality produces a smaller memory and resource
 requirement for your computer.
-
-QnetDVAP
-
-The serial number required in the .cfg file is obtained from the label
-that can be seen on the DVAP circuit board. In most cases set the power
-to maximum level.
-
-QnetDVRPTR
-
-The serial number required in the qn.cfg file can most easily be obtained
-by examining the log file once the board has been powered up. Once you
-know the board serial number, edit g2.cfg. After editing g2.cfg file you
-can restart the effected program with "sudo systemctl restart qndvrptr".
-Or you can always just reboot with "sudo reboot" or "sudo shutdown -r now".
-
-Rig specific parameters are in "module.x.rf_rx_level", "module.x.inverse.rx" and
-"module.x.inverse.tx". You need to play with these to work best with your rig.
-With my Kenwood TM-V71, I use the default values.
-
-You can first start with inverse.rx, trying true or false. Use the echo command
-on your radio and look in the logs to see if you are getting into the
-dvprtr. Remember to restart the QnetDVRPTR service anytime you modify
-/usr/local/etc/g2.cfg. Once you are able to get into the QnetDVRPTR,
-then you can work out the inverse.tx paramter. Once you hear anything
-with in the echo mode, move rf_rx_level up or down to get the best
-audio.
 
 Once you have a working system, it's a good idea to back up you qn.cfg
 files.

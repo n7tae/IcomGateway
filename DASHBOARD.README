@@ -3,7 +3,7 @@
 A web-based dashboard can be enabled. The dashboard has several sections
 that you can display in any order. You can also control the refresh rate and
 how many rows you want in the Last Heard section. You can configure these
-features with the ./qnconfig menu. Don't set the refresh time faster than about
+features with the ./config menu. Don't set the refresh time faster than about
 10 seconds. If you do, it will become difficult to use the Send URCall button.
 
 By default, the installed web server will use ip/port 0.0.0.0:80. If you want
@@ -32,7 +32,13 @@ address or at http://<hostname>.local/ (on the same subnet).
 
 Please note that this is a very simple server and is not recommended for the
 world wide web. If you want a robust dashboard accessible from the web, you
-will want to use a hardened server, like apache, and a different index.php file.
+will want to use a hardened server, like apache, and possibly a different
+index.php file.
+
+The index.php file supplied with this distribution will work with apache, but you
+will need php support.
+
+As reported, you need libapache2-mod-php8.1dev (assuming PHP 8.1) and php8.1-sqlite3.
 
 Please note that if you are typing in a URCALL when the webpage is refreshing,
 the entry field will loose focus and you'll have to try again.
@@ -53,6 +59,8 @@ The responsive dashboard currently has the following features
       hidden, however, simply rotate your mobile device to landscape view and they
       should appear
   * QnRemote section (aka URCall section) has improved design for mobile device use
+  * The URCALL section of the dashboard should probably be disabled for public repeaters
+      since is allows and browser client to shut down the system.
 
 Future improvements will be made to
   * The layout to respect order of the dash_show_order configuration item

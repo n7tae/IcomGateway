@@ -5,7 +5,7 @@ and unlinking from you radio's keyboard, if present. For example, typing
 "B75703" should link you to XRF757 C.
 
 DTMF is not enabled by default. You can install and uninstall it from the
-qnadmin script.
+admin script.
 
 Be sure to look at the 'dtmf' script. It contains examples of all the DTMF
 commands it supports. You can add more if you are good at shell programming
@@ -25,7 +25,7 @@ Example: qnremote c n7tae xrf757cl
 Where...
         c is the local repeater module
         n7tae is the value of mycall
-        xrf757cl is the value of yourcall, in this case this is a Link command
+        xrf757cl is the value of urcall, in this case this is a Link command
 
 You simple specify the module the command will be sent to, and the MyCall and
 YourCall parameters. Here are some more examples:
@@ -33,7 +33,7 @@ YourCall parameters. Here are some more examples:
 qnremote b w4wwm u	# W4WWM is unlinking module B.
 qnremote c w1bwb i  # W1BSB is requesting the status of module C
 
-Modules, callsigns and YourCall can all be in lowercase, qnremote will conver
+Modules, callsigns and YourCall can all be in lowercase, qnremote will convert
 them to uppercase. QnetLink will validate that the specific MyCall is allowed
 to link or unlink, according to the configuration. (By default, any user can
 link or unlink a module, unless link_unlink is specified in the configuration

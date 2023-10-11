@@ -5,7 +5,10 @@ sudo apt update
 sudo apt upgrade
 sudo apt install make g++ unzip git wget curl
 
-One package you probably don't have, but will need:
+One package you may not have, but will need is a database. IcomGateway includes a
+dashboard with a last heard section. The last heard section uses SQLite,
+a light-weight database, so you will need its package to compile the gateway:
+
 sudo apt install libsqlite3-dev
 
 git clone git://github.com/n7tae/IcomGateway.git
@@ -113,12 +116,12 @@ override anything defined before. The format for this file is just like gwys.txt
 # Here comes a bogus definition, with the proper format:
 Q0XYZ 44.44.44.44 20001
 
-Now, you can compile and install your system with the 'is' key. qnadmin will
+Now, you can compile and install your system with the 'is' key. admin will
 use your qn.cfg file to figure out what needs to be compiled and how it is to
 be installed.
 
 If you plan on using DTMF, use the 'id' key to install it. Once you install
-something, the qnadmin will dynamically change and show you how to uninstall the
+something, the admin will dynamically change and show you how to uninstall the
 installed items.
 
 The maintenance sub-menu accessed with the 'm' key will let you stop and start
