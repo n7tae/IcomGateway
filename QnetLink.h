@@ -158,7 +158,6 @@ private:
 	CSockAddress fromDst4;
 
 	// unix sockets to gateway
-	std::string togate;
 	CUnixDgramReader Gate2Link;
 	CUnixDgramWriter Link2Gate;
 

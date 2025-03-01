@@ -54,7 +54,7 @@
 #include "QnetLink.h"
 #include "Utilities.h"
 
-#define LINK_VERSION "20223"
+#define LINK_VERSION "40301"
 #ifndef BIN_DIR
 #define BIN_DIR "/usr/local/bin"
 #endif
@@ -742,9 +742,6 @@ bool CQnetLink::ReadConfig(const char *cfgFile)
 	int maxdongle;
 	cfg.GetValue(key+"max_dongles", estr, maxdongle, 0, 10);
 	saved_max_dongles = max_dongles = (unsigned int)maxdongle;
-
-	key.assign("gateway_");
-	cfg.GetValue(key+"to_link", estr, togate, 1, FILENAME_MAX);
 
 	cfg.GetValue("log_qso", estr, qso_details);
 	cfg.GetValue("log_debug", estr, log_debug);
@@ -2867,7 +2864,7 @@ void CQnetLink::Process()
 				if (length == 56)
 				{
 					if (qso_details)
-						printf("START from local g2: streamID=%04x, flags=%02x:%02x:%02x, my=%.8s/%.4s, ur=%.8s, rpt1=%.8s, rpt2=%.8s, %d bytes on %s\n", ntohs(dsvt.streamid), dsvt.hdr.flag[0], dsvt.hdr.flag[1], dsvt.hdr.flag[2], dsvt.hdr.mycall, dsvt.hdr.sfx, dsvt.hdr.urcall, dsvt.hdr.rpt1, dsvt.hdr.rpt2, length, togate.c_str());
+						printf("START from local g2: streamID=%04x, flags=%02x:%02x:%02x, my=%.8s/%.4s, ur=%.8s, rpt1=%.8s, rpt2=%.8s, len=%d\n", ntohs(dsvt.streamid), dsvt.hdr.flag[0], dsvt.hdr.flag[1], dsvt.hdr.flag[2], dsvt.hdr.mycall, dsvt.hdr.sfx, dsvt.hdr.urcall, dsvt.hdr.rpt1, dsvt.hdr.rpt2, length);
 
 					// save mycall
 					char call[CALL_SIZE + 1];
