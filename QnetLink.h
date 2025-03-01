@@ -28,8 +28,7 @@
 #include "QnetTypeDefs.h"
 #include "SEcho.h"
 #include "Random.h"
-#include "UnixPacketSock.h"
-#include "UDPSocket.h"
+#include "UnixDgramSocket.h"
 #include "UDPSocket.h"
 #include "Timer.h"
 #include "QnetDB.h"
@@ -160,7 +159,8 @@ private:
 
 	// unix sockets to gateway
 	std::string togate;
-	CUnixPacketClient ToGate;
+	CUnixDgramReader Gate2Link;
+	CUnixDgramWriter Link2Gate;
 
 	struct timeval tv;
 

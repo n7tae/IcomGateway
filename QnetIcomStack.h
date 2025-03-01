@@ -21,10 +21,10 @@
 #include <atomic>
 #include <string>
 #include <netinet/in.h>
-
 #include "SockAddress.h"
-#include "UnixPacketSock.h"
 #include "KRBase.h"
+
+#include "UnixDgramSocket.h"
 
 #define CALL_SIZE 8
 #define IP_SIZE 15
@@ -48,8 +48,8 @@ private:
 	bool ReadConfig(const char *);
 
 	// Unix sockets
-	std::string togate;
-	CUnixPacketClient ToGate;
+	CUnixDgramReader Gate2Icom;
+	CUnixDgramWriter Icom2Gate;
 
 	// config data
 	std::string LOCAL_IP, REPEATER_IP;

@@ -63,11 +63,12 @@ bool CQnetIcomStack::Initialize(const char *cfgfile)
 		return true;
 
 	// open the unix socket to the gateway
-	printf("Connecting to the gateway at %s\n", togate.c_str());
-	if (ToGate.Open(togate.c_str(), this))
+	printf("Opening Gate2Icom\n");
+	if (Gate2Icom.Open("gate2icom"))
 		return true;
+	Icom2Gate.SetUp("icom2gate");
 
-	gateway_fd = ToGate.GetFD();
+	gateway_fd = Gate2Icom.GetFD();
 
 	printf("File descriptors: icom=%d, gateway=%d\n", icom_fd, gateway_fd);
 	return false;
@@ -193,7 +194,7 @@ void CQnetIcomStack::Run()
 						memcpy(dsvt.hdr.rpt1, dstr.vpkt.hdr.r2, 8);		// reverse order...
 						memcpy(dsvt.hdr.rpt2, dstr.vpkt.hdr.r1, 8);		// to make it right for the gateway
 						memcpy(dsvt.hdr.urcall, dstr.vpkt.hdr.ur, 22);	// ur, my, nm, pfcs 8+8+4+2==22
-						ToGate.Write(dsvt.title, 56);
+						Icom2Gate.Write(dsvt.title, 56);
 
 					}
 					else // 29==len or 32==len
@@ -203,7 +204,7 @@ void CQnetIcomStack::Run()
 							printf("id=%04x from RPTR count=%u end of transmission\n", ntohs(dstr.vpkt.streamid), ntohs(dstr.counter));
 						}
 						memcpy(dsvt.vasd.voice, (29==len)?dstr.vpkt.vasd.voice:dstr.vpkt.vasd1.voice, 12);
-						ToGate.Write(dsvt.title, 27);
+						Icom2Gate.Write(dsvt.title, 27);
 					}
 				}
 				else if (26 == len)
@@ -250,7 +251,7 @@ void CQnetIcomStack::Run()
 		if (FD_ISSET(gateway_fd, &readfds))
 		{
 			SDSVT dsvt;
-			len = ToGate.Read(dsvt.title, sizeof(SDSVT));
+			len = Gate2Icom.Read(dsvt.title, sizeof(SDSVT));
 
 			if ((56 == len || 27 == len) && (0 == memcmp(dsvt.title, "DSVT", 4)))
 			{
@@ -283,7 +284,7 @@ void CQnetIcomStack::Run()
 			}
 			else if (len < 0)
 			{
-				fprintf(stderr, "ERROR: Run: ToGate.Read() returned error %d: %s\n", errno, strerror(errno));
+				fprintf(stderr, "ERROR: Run: Gate2Icom.Read() returned error %d: %s\n", errno, strerror(errno));
 				break;
 			}
 			else if (0 == len)
@@ -298,7 +299,7 @@ void CQnetIcomStack::Run()
 	}
 
 	close(icom_fd);
-	ToGate.Close();
+	Gate2Icom.Close();
 }
 
 void CQnetIcomStack::SendToIcom(const unsigned char *buf, const int size) const
@@ -343,7 +344,6 @@ bool CQnetIcomStack::ReadConfig(const char *cfgFile)
 	}
 
 	cfg.GetValue("log_qso", estr, LOG_QSO);
-	cfg.GetValue("gateway_to_icom", estr, togate, 1, FILENAME_MAX);
 	cfg.GetValue("icom_internal_ip", estr, LOCAL_IP, 7, IP_SIZE);
 	cfg.GetValue("icom_external_ip", estr, REPEATER_IP, 7, IP_SIZE);
 	int i;

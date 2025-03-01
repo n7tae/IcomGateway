@@ -48,7 +48,7 @@
 static int module;
 static time_t tNow = 0;
 static short streamid_raw = 0;
-static std::string REPEATER, togateway;
+static std::string REPEATER;
 static int PLAY_WAIT, PLAY_DELAY;
 
 static unsigned char silence[9] = { 0x9E, 0x8D, 0x32, 0x88, 0x26, 0x1A, 0x3F, 0x61, 0xE8 };
@@ -99,7 +99,6 @@ static bool ReadCfgFile()
 			return true;
 		}
 	}
-	cfg.GetValue("gateway_fromremote", estr, togateway, 1, FILENAME_MAX);
 
 	cfg.GetValue("timing_play_wait", estr, PLAY_WAIT, 1, 10);
 	cfg.GetValue("timing_play_delay", estr, PLAY_DELAY, 15, 25);
@@ -217,7 +216,7 @@ int main(int argc, char *argv[])
 	time(&tNow);
 	CRandom Random;
 	CUnixDgramWriter ToGateway;
-	ToGateway.SetUp(togateway.c_str());
+	ToGateway.SetUp("remote2gate");
 
 	SDSVT pkt;
 	memcpy(pkt.title, "DSVT", 4);

@@ -299,9 +299,6 @@ bool CQnetGateway::ReadConfig(char *cfgFile)
 	cfg.GetValue(path+"ipv6_port", estr, g2_ipv6_external.port, 1024, 65535);
 	cfg.GetValue(path+"header_regen", estr, GATEWAY_HEADER_REGEN);
 	cfg.GetValue(path+"send_qrgs_maps", estr, GATEWAY_SEND_QRGS_MAP);
-	cfg.GetValue(path+"to_link", estr, to_link, 1, FILENAME_MAX);
-	cfg.GetValue(path+"fromremote", estr, fromremote, 1, FILENAME_MAX);
-	cfg.GetValue(path+"to_icom", estr, to_icom, 1, FILENAME_MAX);
 	path.append("find_route");
 	if (cfg.KeyExists(path))
 	{
@@ -649,7 +646,7 @@ void CQnetGateway::ProcessTimeouts()
 				end_of_audio.streamid = toRptr[i].saved_hdr.streamid;
 				end_of_audio.ctrl = toRptr[i].sequence | 0x40;
 
-				ToIcom.Write(end_of_audio.title, 27);
+				Gate2Icom.Write(end_of_audio.title, 27);
 
 				toRptr[i].last_time = 0;
 			}
@@ -1135,7 +1132,7 @@ void CQnetGateway::ProcessG2Header(const SDSVT &g2buf, const int source_sock)
 				if (source_sock >= 0)
 					printf("IP=[%s]:%u\n", fromDstar.GetAddress(), fromDstar.GetPort());
 				else
-					printf("UnixSock=%s\n", to_link.c_str());
+					printf("qnlink\n");
 			}
 			lhcallsign[i].assign((const char *)g2buf.hdr.mycall, 8);
 			if (showLastHeard && memcmp(g2buf.hdr.sfx, "RPTR", 4) && std::regex_match(lhcallsign[i].c_str(), preg))
@@ -1149,7 +1146,7 @@ void CQnetGateway::ProcessG2Header(const SDSVT &g2buf, const int source_sock)
 				qnDB.UpdateLH(lhcallsign[i].c_str(), lhsfx[i].c_str(), 'A'+i, reflector.c_str());
 			}
 
-			ToIcom.Write(g2buf.title, 56);
+			Gate2Icom.Write(g2buf.title, 56);
 			nextctrl[i] = 0U;
 
 			/* save the header */
@@ -1244,7 +1241,7 @@ void CQnetGateway::ProcessG2(const ssize_t g2buflen, SDSVT &g2buf, const int sou
 										const unsigned char sync[3] = { 0x55U, 0x2DU, 0x16U };
 										memcpy(dsvt.vasd.voice, sync, 3U);
 									}
-									ToIcom.Write(dsvt.title, 27);
+									Gate2Icom.Write(dsvt.title, 27);
 								}
 							}
 							else
@@ -1267,7 +1264,7 @@ void CQnetGateway::ProcessG2(const ssize_t g2buflen, SDSVT &g2buf, const int sou
 								g2buf.ctrl = nextctrl[i];
 								nextctrl[i] = (nextctrl[i] + 1U) % 21U;
 							}
-							ToIcom.Write(g2buf.title, 27);
+							Gate2Icom.Write(g2buf.title, 27);
 							if (source_sock >= 0 && showLastHeard)
 							{
 								std::string smartgroup;
@@ -1333,10 +1330,10 @@ void CQnetGateway::ProcessG2(const ssize_t g2buflen, SDSVT &g2buf, const int sou
 								printf("Re-generating header for streamID=%04x\n", ntohs(g2buf.streamid));
 
 								/* re-generate/send the header */
-								ToIcom.Write(toRptr[i].saved_hdr.title, 56);
+								Gate2Icom.Write(toRptr[i].saved_hdr.title, 56);
 
 								/* send this audio packet to repeater */
-								ToIcom.Write(g2buf.title, 27);
+								Gate2Icom.Write(g2buf.title, 27);
 
 								/* time it, in case stream times out */
 								time(&toRptr[i].last_time);
@@ -1449,7 +1446,7 @@ void CQnetGateway::ProcessIcom(const ssize_t recvlen, SDSVT &dsvt)
 				bool mycall_valid = std::regex_match(call.c_str(), preg);
 
 				if (mycall_valid)
-					ToLink.Write(dsvt.title, recvlen);
+					Gate2Link.Write(dsvt.title, recvlen);
 				else
 					printf("MYCALL [%s] failed IRC expression validation\n", call.c_str());
 
@@ -1615,7 +1612,7 @@ void CQnetGateway::ProcessIcom(const ssize_t recvlen, SDSVT &dsvt)
 													dsvt.hdr.rpt1[7] = 'G';
 													calcPFCS(dsvt.title, 56);
 
-													ToIcom.Write(dsvt.title, 56);
+													Gate2Icom.Write(dsvt.title, 56);
 
 													/* time it, in case stream times out */
 													time(&toRptr[i].last_time);
@@ -1715,7 +1712,7 @@ void CQnetGateway::ProcessIcom(const ssize_t recvlen, SDSVT &dsvt)
 
 								calcPFCS(recbuf.title, 56);
 
-								write(vm[i].fd, recbuf.title, 56);
+								write(vm[i].fd, &recbuf, 56);
 							}
 						}
 					}
@@ -1755,7 +1752,7 @@ void CQnetGateway::ProcessIcom(const ssize_t recvlen, SDSVT &dsvt)
 
 								calcPFCS(recbuf.title, 56);
 
-								write (recd[i].fd, recbuf.title, 56);
+								write(recd[i].fd, &recbuf, 56);
 							}
 						}
 					}
@@ -1791,7 +1788,7 @@ void CQnetGateway::ProcessIcom(const ssize_t recvlen, SDSVT &dsvt)
 							dsvt.hdr.rpt1[7] = 'G';
 							calcPFCS(dsvt.title, 56);
 
-							ToIcom.Write(dsvt.title, 56);
+							Gate2Icom.Write(dsvt.title, 56);
 
 							/* time it, in case stream times out */
 							time(&toRptr[i].last_time);
@@ -1921,7 +1918,7 @@ void CQnetGateway::ProcessIcom(const ssize_t recvlen, SDSVT &dsvt)
 				}
 
 				/* send data to qnlink */
-				ToLink.Write(dsvt.title, 27);
+				Gate2Link.Write(dsvt.title, 27);
 
 				/* aprs processing */
 				if (APRS_ENABLE)
@@ -1992,7 +1989,7 @@ void CQnetGateway::ProcessIcom(const ssize_t recvlen, SDSVT &dsvt)
 					}
 					else if (toRptr[i].saved_hdr.streamid == dsvt.streamid)  	// or maybe this is cross-banding data
 					{
-						ToIcom.Write(dsvt.title, 27);
+						Gate2Icom.Write(dsvt.title, 27);
 
 						/* timeit */
 						time(&toRptr[i].last_time);
@@ -2076,9 +2073,9 @@ void CQnetGateway::Process()
 			AddFDSet(max_nfds, g2_sock[0], &fdset);
 		if (g2_sock[1] >= 0)
 			AddFDSet(max_nfds, g2_sock[1], &fdset);
-		AddFDSet(max_nfds, ToLink.GetFD(), &fdset);
-		AddFDSet(max_nfds, ToIcom.GetFD(), &fdset);	// we only need to do this once!
-		AddFDSet(max_nfds, FromRemote.GetFD(), &fdset);
+		AddFDSet(max_nfds, Link2Gate.GetFD(), &fdset);
+		AddFDSet(max_nfds, Icom2Gate.GetFD(), &fdset);	// we only need to do this once!
+		AddFDSet(max_nfds, Remote2Gate.GetFD(), &fdset);
 		struct timeval tv;
 		tv.tv_sec = 0;
 		tv.tv_usec = 20000; // 20 ms
@@ -2103,19 +2100,19 @@ void CQnetGateway::Process()
 		}
 
 		// process packets from qnremote
-		if (IsRunning() && FD_ISSET(FromRemote.GetFD(), &fdset))
+		if (IsRunning() && FD_ISSET(Remote2Gate.GetFD(), &fdset))
 		{
 			SDSVT dsvt;
-			const ssize_t len = FromRemote.Read(dsvt.title, 56);
+			const ssize_t len = Remote2Gate.Read(dsvt.title, 56);
 			ProcessIcom(len, dsvt);
-			FD_CLR(FromRemote.GetFD(), &fdset);
+			FD_CLR(Remote2Gate.GetFD(), &fdset);
 		}
 
 		// process packets from qnlink
-		if (IsRunning() && FD_ISSET(ToLink.GetFD(), &fdset))
+		if (IsRunning() && FD_ISSET(Link2Gate.GetFD(), &fdset))
 		{
 			SDSVT dsvt;
-			ssize_t g2buflen = ToLink.Read(dsvt.title, 56);
+			ssize_t g2buflen = Link2Gate.Read(dsvt.title, 56);
 			if (16==g2buflen && 0==memcmp(dsvt.title, "LINK", 4))
 			{
 				SLINKFAMILY fam;
@@ -2134,16 +2131,16 @@ void CQnetGateway::Process()
 			{
 				ProcessG2(g2buflen, dsvt, -1);
 			}
-			FD_CLR(ToLink.GetFD(), &fdset);
+			FD_CLR(Link2Gate.GetFD(), &fdset);
 		}
 
 		// process packets coming from local repeater module(s)
-		if (IsRunning() && FD_ISSET(ToIcom.GetFD(), &fdset))
+		if (IsRunning() && FD_ISSET(Icom2Gate.GetFD(), &fdset))
 		{
 			SDSVT dsvt;
-			const ssize_t len = ToIcom.Read(dsvt.title, 56);
+			const ssize_t len = Icom2Gate.Read(dsvt.title, 56);
 			ProcessIcom(len, dsvt);
-			FD_CLR(ToIcom.GetFD(), &fdset);
+			FD_CLR(Icom2Gate.GetFD(), &fdset);
 		}
 	}
 
@@ -2439,7 +2436,7 @@ void CQnetGateway::PlayFileThread(SECHO &edata)
 	memcpy(dsvt.hdr.urcall, "CQCQCQ  ", 8);
 	calcPFCS(dsvt.title, 56);
 
-	ToIcom.Write(dsvt.title, 56);
+	Gate2Icom.Write(dsvt.title, 56);
 
 	dsvt.config = 0x20U;
 
@@ -2506,7 +2503,7 @@ void CQnetGateway::PlayFileThread(SECHO &edata)
 			if (i+1 == ambeblocks)
 				dsvt.ctrl |= 0x40U;
 
-			ToIcom.Write(dsvt.title, 27);
+			Gate2Icom.Write(dsvt.title, 27);
 
 			std::this_thread::sleep_for(std::chrono::milliseconds(TIMING_PLAY_DELAY));
 		}
@@ -2574,15 +2571,17 @@ bool CQnetGateway::Init(char *cfgfile)
 	qnDB.ClearLH();
 
 	// Open unix sockets between qngateway and qnremote
-	printf("Connecting to qnlink at %s\n", to_link.c_str());
-	if (ToLink.Open(to_link.c_str(), this))
+	printf("Opening Remote2Gate\n");
+	if (Remote2Gate.Open("remote2gate"))
 		return true;
-	printf("Opening remote port at %s\n", fromremote.c_str());
-	if (FromRemote.Open(fromremote.c_str()))
+	printf("Opening Link2Gate\n");
+	if (Link2Gate.Open("link2gate"))
 		return true;
-	printf("Connecting to qnistack at %s\n", to_icom.c_str());
-	if (ToIcom.Open(to_icom.c_str(), this))
+	printf("Opening Icom2Gate\n");
+	if (Icom2Gate.Open("icom2gate"))
 		return true;
+	Gate2Icom.SetUp("gate2icom");
+	Gate2Link.SetUp("gate2link");
 
 	for (i=0; i<3; i++)
 	{
@@ -2778,12 +2777,12 @@ CQnetGateway::CQnetGateway()
 
 CQnetGateway::~CQnetGateway()
 {
-	ToLink.Close();
-	FromRemote.Close();
+	Link2Gate.Close();
+	Remote2Gate.Close();
 	for (int i=0; i<3; i++)
 	{
 		if (Rptr.mod[i].defined)
-			ToIcom.Close();
+			Icom2Gate.Close();
 	}
 
 	if (APRS_ENABLE)

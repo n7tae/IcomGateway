@@ -23,7 +23,6 @@
 #include "QnetTypeDefs.h"
 #include "SEcho.h"
 #include "UnixDgramSocket.h"
-#include "UnixPacketSock.h"
 #include "aprs.h"
 #include "SockAddress.h"
 #include "QnetDB.h"
@@ -109,10 +108,8 @@ private:
 
 	SPORTIP g2_external, g2_ipv6_external, ircddb[2];
 
-	CUnixDgramReader FromRemote;
-	CUnixPacketServer ToLink, ToIcom;
-
-	std::string to_link, fromremote, to_icom;
+	CUnixDgramReader Icom2Gate, Link2Gate, Remote2Gate;
+	CUnixDgramWriter Gate2Icom, Gate2Link;
 
 	std::string OWNER, owner, FILE_DTMF, FILE_ECHOTEST, IRCDDB_PASSWORD[2], FILE_QNVOICE_FILE, DASH_SHOW_ORDER;
 

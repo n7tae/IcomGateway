@@ -41,13 +41,13 @@ ALL_PROGRAMS = qngateway qnlink qnistack qnremote qnvoice
 
 all    : $(ALL_PROGRAMS)
 
-qngateway : QnetGateway.o KRBase.o aprs.o UnixDgramSocket.o UnixPacketSock.o TCPReaderWriterClient.o QnetConfigure.o QnetDB.o CacheManager.o DStarDecode.o Location.o $(IRCOBJS)
+qngateway : QnetGateway.o KRBase.o aprs.o UnixDgramSocket.o TCPReaderWriterClient.o QnetConfigure.o QnetDB.o CacheManager.o DStarDecode.o Location.o $(IRCOBJS)
 	g++ -o $@ $^ $(LDFLAGS) -l sqlite3 -pthread
 
-qnlink : QnetLink.o KRBase.o DPlusAuthenticator.o TCPReaderWriterClient.o UnixPacketSock.o UDPSocket.o QnetConfigure.o QnetDB.o
+qnlink : QnetLink.o KRBase.o DPlusAuthenticator.o TCPReaderWriterClient.o UnixDgramSocket.o UDPSocket.o QnetConfigure.o QnetDB.o
 	g++ -o $@ $^ $(LDFLAGS) -l sqlite3 -pthread
 
-qnistack : QnetIcomStack.o KRBase.o UnixPacketSock.o QnetConfigure.o
+qnistack : QnetIcomStack.o KRBase.o UnixDgramSocket.o QnetConfigure.o
 	g++ -o $@ $^ $(LDFLAGS)
 
 qnremote : QnetRemote.o UnixDgramSocket.o QnetConfigure.o

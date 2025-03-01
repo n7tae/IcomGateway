@@ -407,7 +407,7 @@ void CQnetLink::RptrAckThread(char *arg)
 
 	memcpy(dsvt.hdr.sfx, "RPTR", 4);
 	calcPFCS(dsvt.title,56);
-	ToGate.Write(dsvt.title, 56);
+	Link2Gate.Write(dsvt.title, 56);
 	//std::this_thread::sleep_for(std::chrono::milliseconds(delay_between))
 
 	dsvt.config = 0x20;
@@ -472,7 +472,7 @@ void CQnetLink::RptrAckThread(char *arg)
 			dsvt.vasd.text[2] = 0xf5;
 			break;
 		}
-		ToGate.Write(dsvt.title, 27);
+		Link2Gate.Write(dsvt.title, 27);
 		if (i < 9)
 			std::this_thread::sleep_for(std::chrono::milliseconds(delay_between));
 	}
@@ -795,12 +795,13 @@ bool CQnetLink::srv_open()
 	}
 
 	/* create our gateway unix sockets */
-	printf("Connecting to qngateway at %s\n", togate.c_str());
-	if (ToGate.Open(togate.c_str(), this))
+	printf("Opening Gate2Link\n");
+	if (Gate2Link.Open("gate2link"))
 	{
 		srv_close();
 		return true;
 	}
+	Link2Gate.SetUp("link2gate");
 
 	/* initialize all remote links */
 	for (int i = 0; i < 3; i++)
@@ -826,7 +827,7 @@ void CQnetLink::srv_close()
 	XRFSock4.Close();
 	DCSSock4.Close();
 	REFSock4.Close();
-	ToGate.Close();
+	Gate2Link.Close();
 }
 
 /* find the repeater IP by callsign and link to it */
@@ -1337,7 +1338,7 @@ void CQnetLink::ProcessXRF(unsigned char *buf, const int length)
 				}
 
 				/* relay data to our local G2 */
-				ToGate.Write(dsvt.title, 56);
+				Link2Gate.Write(dsvt.title, 56);
 
 				/* send data to donglers */
 				/* no changes here */
@@ -1399,7 +1400,7 @@ void CQnetLink::ProcessXRF(unsigned char *buf, const int length)
 							calcPFCS(from_xrf_torptr_brd.title, 56);
 
 							/* send the data to the local gateway/repeater */
-							ToGate.Write(from_xrf_torptr_brd.title, 56);
+							Link2Gate.Write(from_xrf_torptr_brd.title, 56);
 
 							/* save streamid for use with the audio packets that will arrive after this header */
 
@@ -1508,7 +1509,7 @@ void CQnetLink::ProcessXRF(unsigned char *buf, const int length)
 			}
 
 			/* relay data to our local G2 */
-			ToGate.Write(dsvt.title, 27);
+			Link2Gate.Write(dsvt.title, 27);
 
 			/* send data to donglers */
 			/* no changes here */
@@ -1537,13 +1538,13 @@ void CQnetLink::ProcessXRF(unsigned char *buf, const int length)
 				if (brd_from_xrf.rptr_streamid[0] != 0x0)
 				{
 					from_xrf_torptr_brd.streamid = brd_from_xrf.rptr_streamid[0];
-					ToGate.Write(from_xrf_torptr_brd.title, 27);
+					Link2Gate.Write(from_xrf_torptr_brd.title, 27);
 				}
 
 				if (brd_from_xrf.rptr_streamid[1] != 0x0)
 				{
 					from_xrf_torptr_brd.streamid = brd_from_xrf.rptr_streamid[1];
-					ToGate.Write(from_xrf_torptr_brd.title, 27);
+					Link2Gate.Write(from_xrf_torptr_brd.title, 27);
 				}
 
 				if (dsvt.ctrl & 0x40)
@@ -1717,7 +1718,7 @@ void CQnetLink::ProcessDCS(unsigned char *dcs_buf, const int length)
 
 					/* send the header to the local gateway/repeater */
 					for (int j=0; j<5; j++)
-						ToGate.Write(rdsvt.dsvt.title, 56);
+						Link2Gate.Write(rdsvt.dsvt.title, 56);
 
 					/* send the data to the donglers */
 					for (auto pos = inbound_list.begin(); pos != inbound_list.end(); pos++)
@@ -1753,7 +1754,7 @@ void CQnetLink::ProcessDCS(unsigned char *dcs_buf, const int length)
 						memcpy(rdsvt.dsvt.vend.textend, endbytes, 6);
 
 					/* send the data to the local gateway/repeater */
-					ToGate.Write(rdsvt.dsvt.title, 27);
+					Link2Gate.Write(rdsvt.dsvt.title, 27);
 
 					/* send the data to the donglers */
 					for (auto pos = inbound_list.begin(); pos != inbound_list.end(); pos++)
@@ -2581,7 +2582,7 @@ void CQnetLink::ProcessREF(unsigned char *buf, const int length)
 				}
 
 				/* send the data to the local gateway/repeater */
-				ToGate.Write(rdsvt.dsvt.title, 56);
+				Link2Gate.Write(rdsvt.dsvt.title, 56);
 
 				/* send the data to the donglers */
 				for (auto pos = inbound_list.begin(); pos != inbound_list.end(); pos++)
@@ -2652,7 +2653,7 @@ void CQnetLink::ProcessREF(unsigned char *buf, const int length)
 			}
 
 			/* send the data to the local gateway/repeater */
-			ToGate.Write(rdsvt.dsvt.title, 27);
+			Link2Gate.Write(rdsvt.dsvt.title, 27);
 
 			/* send the data to the donglers */
 			for (pos = inbound_list.begin(); pos != inbound_list.end(); pos++)
@@ -2725,7 +2726,7 @@ void CQnetLink::Process()
 
 	if (uses_ipv6)
 		printf("xrf6=%d, dcs6=%d, ref6=%d ", XRFSock6.GetSocket(), DCSSock6.GetSocket(), REFSock6.GetSocket());
-	printf("xrf4=%d, dcs4=%d, ref4=%d, gateway=%d\n", XRFSock4.GetSocket(), DCSSock4.GetSocket(), REFSock4.GetSocket(), ToGate.GetFD());
+	printf("xrf4=%d, dcs4=%d, ref4=%d, gateway=%d\n", XRFSock4.GetSocket(), DCSSock4.GetSocket(), REFSock4.GetSocket(), Gate2Link.GetFD());
 
 	// initialize all request links
 	bool first = true;
@@ -2792,7 +2793,7 @@ void CQnetLink::Process()
 			AddFDSet(max_nfds, DCSSock6.GetSocket(), &fdset);
 			AddFDSet(max_nfds, REFSock6.GetSocket(), &fdset);
 		}
-		AddFDSet(max_nfds, ToGate.GetFD(), &fdset);
+		AddFDSet(max_nfds, Gate2Link.GetFD(), &fdset);
 		tv.tv_sec = 0;
 		tv.tv_usec = 20000;
 		auto sval = select(max_nfds + 1, &fdset, 0, 0, &tv);
@@ -2854,11 +2855,11 @@ void CQnetLink::Process()
 			}
 		}
 
-		if (keep_running && FD_ISSET(ToGate.GetFD(), &fdset))
+		if (keep_running && FD_ISSET(Gate2Link.GetFD(), &fdset))
 		{
 			unsigned char your[3] = { 'C', 'C', 'C' };
 			SDSVT dsvt;
-			int length = ToGate.Read(dsvt.title, 56);
+			int length = Gate2Link.Read(dsvt.title, 56);
 
 			if ((length==56 || length==27) && 0==memcmp(dsvt.title,"DSVT", 4U) && dsvt.id==0x20U && (dsvt.config==0x10U || dsvt.config==0x20U))
 			{
@@ -3161,7 +3162,7 @@ void CQnetLink::Process()
 
 									calcPFCS(fromrptr_torptr_brd.title, 56);
 
-									ToGate.Write(fromrptr_torptr_brd.title, 56);
+									Link2Gate.Write(fromrptr_torptr_brd.title, 56);
 
 									brd_from_rptr.from_rptr_streamid = dsvt.streamid;
 									brd_from_rptr.to_rptr_streamid[brd_from_rptr_idx] = fromrptr_torptr_brd.streamid;
@@ -3245,13 +3246,13 @@ void CQnetLink::Process()
 								if (brd_from_rptr.to_rptr_streamid[0])
 								{
 									fromrptr_torptr_brd.streamid = brd_from_rptr.to_rptr_streamid[0];
-									ToGate.Write(fromrptr_torptr_brd.title, 27);
+									Link2Gate.Write(fromrptr_torptr_brd.title, 27);
 								}
 
 								if (brd_from_rptr.to_rptr_streamid[1])
 								{
 									fromrptr_torptr_brd.streamid = brd_from_rptr.to_rptr_streamid[1];
-									ToGate.Write(fromrptr_torptr_brd.title, 27);
+									Link2Gate.Write(fromrptr_torptr_brd.title, 27);
 								}
 
 								if (dsvt.ctrl & 0x40U)
@@ -3398,7 +3399,7 @@ void CQnetLink::Process()
 					}
 				}
 			}
-			FD_CLR (ToGate.GetFD(), &fdset);
+			FD_CLR (Gate2Link.GetFD(), &fdset);
 		}
 		for (int i=0; i<3 && keep_running; i++)
 		{
@@ -3519,7 +3520,7 @@ void CQnetLink::AudioNotifyThread(SECHO &edata)
 		return;
 	}
 
-	ToGate.Write(edata.header.title, 56);
+	Link2Gate.Write(edata.header.title, 56);
 
 	edata.header.config = 0x20U;
 
@@ -3587,7 +3588,7 @@ void CQnetLink::AudioNotifyThread(SECHO &edata)
 			}
 			if (count+1 == ambeblocks && ! edata.is_linked)
 				edata.header.ctrl |= 0x40U;
-			ToGate.Write(edata.header.title, 27);
+			Link2Gate.Write(edata.header.title, 27);
 			std::this_thread::sleep_for(std::chrono::milliseconds(delay_between));
 		}
 	}
@@ -3646,7 +3647,7 @@ void CQnetLink::AudioNotifyThread(SECHO &edata)
 				memcpy(edata.header.vasd.text, edata.header.ctrl ? sdsilence : sdsync, 3);
 				if (i+1==size && lastch)
 					edata.header.ctrl |= 0x40U;	// signal the last voiceframe (of the last character)
-				ToGate.Write(edata.header.title, 27);
+				Link2Gate.Write(edata.header.title, 27);
 				std::this_thread::sleep_for(std::chrono::milliseconds(delay_between));
 			}
 		}

@@ -3,6 +3,7 @@
 #include <netdb.h>
 #include <unistd.h>
 #include <string>
+#include <cstring>
 
 #include "IRCDDBApp.h"
 #include "IRCutils.h"
