@@ -1,4 +1,4 @@
-# Copyright (c) 2018-2021 by Thomas A. Early N7TAE
+# Copyright (c) 2018-2021,2025 by Thomas A. Early N7TAE
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -41,13 +41,13 @@ ALL_PROGRAMS = qngateway qnlink qnistack qnremote qnvoice
 
 all    : $(ALL_PROGRAMS)
 
-qngateway : QnetGateway.o KRBase.o aprs.o UnixDgramSocket.o TCPReaderWriterClient.o QnetConfigure.o QnetDB.o CacheManager.o DStarDecode.o Location.o $(IRCOBJS)
+qngateway : QnetGateway.o Base.o aprs.o UnixDgramSocket.o TCPReaderWriterClient.o QnetConfigure.o QnetDB.o CacheManager.o DStarDecode.o Location.o $(IRCOBJS)
 	g++ -o $@ $^ $(LDFLAGS) -l sqlite3 -pthread
 
-qnlink : QnetLink.o KRBase.o DPlusAuthenticator.o TCPReaderWriterClient.o UnixDgramSocket.o UDPSocket.o QnetConfigure.o QnetDB.o
+qnlink : QnetLink.o Base.o DPlusAuthenticator.o TCPReaderWriterClient.o UnixDgramSocket.o UDPSocket.o QnetConfigure.o QnetDB.o
 	g++ -o $@ $^ $(LDFLAGS) -l sqlite3 -pthread
 
-qnistack : QnetIcomStack.o KRBase.o UnixDgramSocket.o QnetConfigure.o
+qnistack : QnetIcomStack.o Base.o UnixDgramSocket.o QnetConfigure.o
 	g++ -o $@ $^ $(LDFLAGS)
 
 qnremote : QnetRemote.o UnixDgramSocket.o QnetConfigure.o

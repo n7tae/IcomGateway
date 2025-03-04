@@ -27,7 +27,7 @@
 #include "SockAddress.h"
 #include "QnetDB.h"
 #include "DStarDecode.h"
-#include "KRBase.h"
+#include "Base.h"
 #include "Location.h"
 
 #define MAXHOSTNAMELEN 64
@@ -90,7 +90,7 @@ using SSD = struct sd_tag
 	void Init() { ih = im = ig = 0; first = true; }
 };
 
-class CQnetGateway : public CKRBase
+class CQnetGateway : public CBase
 {
 public:
 	CQnetGateway();

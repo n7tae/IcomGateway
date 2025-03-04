@@ -1,6 +1,6 @@
 #pragma once
 /*
- *   Copyright 2022 by Thomas Early, N7TAE
+ *   Copyright 2022,2025 by Thomas Early, N7TAE
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -37,7 +37,7 @@ using SDSTR = struct dstr_tag
 			unsigned char icm_id;		// 10
 			unsigned char flagb[3];	    // 11
 			unsigned short streamid;	// 14
-			unsigned char ctrl;			// 16	sequence number hdr=0, voice%21, end|=0x40
+			unsigned char ctrl;			// 16	sequence number hdr=0x80, voice%21, end|=0x40
 			union
 			{
 				struct

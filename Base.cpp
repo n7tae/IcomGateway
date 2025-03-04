@@ -19,28 +19,28 @@
 #include <csignal>
 #include <iostream>
 
-#include "KRBase.h"
+#include "Base.h"
 
-std::atomic<bool> CKRBase::keep_running(true);
+std::atomic<bool> CBase::keep_running(true);
 
-CKRBase::CKRBase()
+CBase::CBase()
 {
-	std::signal(SIGINT, CKRBase::SigHandler);
-	std::signal(SIGHUP, CKRBase::SigHandler);
-	std::signal(SIGTERM, CKRBase::SigHandler);
+	std::signal(SIGINT, CBase::SigHandler);
+	std::signal(SIGHUP, CBase::SigHandler);
+	std::signal(SIGTERM, CBase::SigHandler);
 }
 
-bool CKRBase::IsRunning()
+bool CBase::IsRunning()
 {
 	return keep_running;
 }
 
-void CKRBase::SetState(bool state)
+void CBase::SetState(bool state)
 {
 	keep_running = state;
 }
 
-void CKRBase::SigHandler(int sig)
+void CBase::SigHandler(int sig)
 {
 	switch (sig)
 	{
@@ -55,13 +55,13 @@ void CKRBase::SigHandler(int sig)
 	}
 }
 
-void CKRBase::AddFDSet(int &max, int newfd, fd_set *set)
+void CBase::AddFDSet(int &max, int newfd, fd_set *set)
 {
 	if (newfd > max)
 		max = newfd;
 	FD_SET(newfd, set);
 }
-void CKRBase::Dump(const std::string &title, const unsigned char *data, unsigned int length)
+void CBase::Dump(const std::string &title, const unsigned char *data, unsigned int length)
 {
 	printf("%s\n", title.c_str());
 

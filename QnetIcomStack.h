@@ -1,5 +1,5 @@
 /*
- *   Copyright (C) 2022 by Thomas A. Early N7TAE
+ *   Copyright (C) 2022,2025 by Thomas A. Early N7TAE
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -22,14 +22,14 @@
 #include <string>
 #include <netinet/in.h>
 #include "SockAddress.h"
-#include "KRBase.h"
+#include "Base.h"
 
 #include "UnixDgramSocket.h"
 
 #define CALL_SIZE 8
 #define IP_SIZE 15
 
-class CQnetIcomStack : CKRBase
+class CQnetIcomStack : CBase
 {
 public:
 	// functions

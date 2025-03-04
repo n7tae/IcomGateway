@@ -1,7 +1,7 @@
 #pragma once
 
 /*
- *   Copyright (C) 2020 by Thomas Early N7TAE
+ *   Copyright (C) 2020,2025 by Thomas Early N7TAE
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -22,11 +22,12 @@
 
 #include <sys/select.h>
 #include <atomic>
+#include <string>
 
-class CKRBase
+class CBase
 {
 public:
-	CKRBase();
+	CBase();
 	bool IsRunning();
 	void SetState(bool state);
 protected:
