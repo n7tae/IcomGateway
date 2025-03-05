@@ -166,15 +166,15 @@ DashboardMenu () {
 	done
 }
 
-FileMenu () {
+LogMenu () {
 	key=''
 	while [[ "$key" != q* ]]; do
 		clear
 		echo
 		if [ -z "$em" ]; then
-			echo "              Debugging Menu"
+			echo "              Logging Menu"
 		else
-			echo "              Debugging/Files/Timings Menu"
+			echo "              Loggging/Files/Timings Menu"
 		fi
 		echo
 		echo    "     Additional entries in log files (in /usr/local/var)"
@@ -305,20 +305,23 @@ IrcddbMenu () {
 }
 
 IcomStackMenu () {
+	[ -z "${icom_use_rp2c+x}" ] && icom_use_rp2c=true
 	key=''
 	while [[ "$key" != q* ]]; do
 		clear
 		echo
-		echo "      Icom Stack IP Menu"
+		echo "       Icom Stack Configuration Menu"
 		echo
-		echo -n "l : Local IP      = "; EvaluateVar icom_internal_ip{,_d}
-		echo -n "s : Icom Stack IP = "; EvaluateVar icom_external_ip{,_d}
+		echo -n "r : Uses RP2C controller = "; EvaluateVar icom_use_rp2c{,_d}
+		echo -n "l : Local IP             = "; EvaluateVar icom_internal_ip{,_d}
+		echo -n "s : Icom Stack IP        = "; EvaluateVar icom_external_ip{,_d}
 		if [ -n "$em" ]; then
-			echo -n "p : Icom Port     = "; EvaluateVar icom_port{,_d}
+			echo -n "p : Icom Port            = "; EvaluateVar icom_port{,_d}
 		fi
 		EndMenu
 
-		if   [[ "$key" == l* ]]; then icom_internal_ip="$value"
+		if   [[ "$key" == r* ]]; then SetBooleanValue icom_use_rp2c "$value"
+		elif [[ "$key" == l* ]]; then icom_internal_ip="$value"
 		elif [[ "$key" == s* ]]; then icom_external_ip="$value"
 		elif [[ "$key" == p* ]]; then icom_port=$value
 		elif [[ "$key" == u* ]]; then
@@ -404,12 +407,20 @@ GateMenu () {
 
 ModuleMenu () {
 	mod=module_${1}
-	if [[ $1 == a ]]; then
-		nmod='a'
-	elif [[ $1 == b ]]; then
-		nmod='b'
+	if [[ "${icom_use_rp2c}" == false ]]; then
+		eval ${mod}_type=1
 	else
-		nmod='c'
+		eval ${mod}_type=0
+	fi
+	if [[ $1 == a ]]; then
+		[ ! -z "${module_a_mark+x}"   ] || module_a_mark=1
+		[ ! -z "${module_a_module+x}" ] || module_a_module=3
+	elif [[ $1 == b ]]; then
+		[ ! -z "${module_b_mark+x}"   ] || module_b_mark=1
+		[ ! -z "${module_b_module+x}" ] || module_b_module=1
+	else
+		[ ! -z "${module_c_mark+x}"   ] || module_c_mark=1
+		[ ! -z "${module_c_module+x}" ] || module_c_module=2
 	fi
 	eval ${mod}=icom
 	key=''
@@ -418,22 +429,25 @@ ModuleMenu () {
 		echo
 		echo "               Module ${1^^} Menu ($mod=${!mod})"
 		echo
-		echo -n "tx : TX Frequency in MHz                          = "; EvaluateVar {${mod},module_x}_tx_frequency
-		echo -n "rx : RX Frequency in MHz                          = "; EvaluateVar {${mod},module_x}_rx_frequency
-		echo -n "ls : Link at startup (must be 8 chars)            = "; EvaluateVar {${mod},module_x}_link_at_start
+		echo -n "tx : TX Frequency in MHz                       = "; EvaluateVar {${mod},module_x}_tx_frequency
+		echo -n "rx : RX Frequency in MHz                       = "; EvaluateVar {${mod},module_x}_rx_frequency
+		echo -n "ls : Link at startup (must be 8 chars)         = "; EvaluateVar {${mod},module_x}_link_at_start
 		if [ -n "$em" ]; then
-			echo -n "al : Automatic re-link on loss of link            = "; EvaluateVar {${mod},module_x}_auto_link
+			echo -n "al : Automatic re-link on loss of link         = "; EvaluateVar {${mod},module_x}_auto_link
 		fi
-		echo -n "cs : Callsign (uses ircddb_login if empty)        = "; EvaluateVar {${mod},module_x}_callsign
-		echo -n "ra : Range (in meters, 1 mile=1609.344 meters)    = "; EvaluateVar {${mod},module_x}_range
-		echo -n "ag : Above ground level (in meters)               = "; EvaluateVar {${mod},module_x}_agl
+		echo -n "cs : Callsign (uses ircddb_login if empty)     = "; EvaluateVar {${mod},module_x}_callsign
+		echo -n "ra : Range (in meters, 1 mile=1609.344 meters) = "; EvaluateVar {${mod},module_x}_range
+		echo -n "ag : Above ground level (in meters)            = "; EvaluateVar {${mod},module_x}_agl
 		if [ -n "$em" ]; then
-			echo -n "ip : IP Address                                   = "; EvaluateVar {${mod},module_x}_ip
-			echo -n "po : Port number                                  = "; EvaluateVar {${mod},module_x}_port
-			echo -n "in : Inactivity for this many minutes unlinks     = "; EvaluateVar {${mod},module_x}_inactivity
-			echo -n "ac : Send acknowledgment on each transmission     = "; EvaluateVar {${mod},module_x}_acknowledge
-			echo -n "ad : acknowledgment delay (in msec)               = "; EvaluateVar {${mod},module_x}_ack_delay
+			echo -n "ip : IP Address                                = "; EvaluateVar {${mod},module_x}_ip
+			echo -n "po : Port number                               = "; EvaluateVar {${mod},module_x}_port
+			echo -n "in : Inactivity for this many minutes unlinks  = "; EvaluateVar {${mod},module_x}_inactivity
+			echo -n "ac : Send acknowledgment on each transmission  = "; EvaluateVar {${mod},module_x}_acknowledge
+			echo -n "ad : acknowledgment delay (in msec)            = "; EvaluateVar {${mod},module_x}_ack_delay
 		fi
+		echo -n "ty : type                                      = "; EvaluateVar {${mod},module_x}_type
+		echo -n "ma : mark                                      = "; EvaluateVar {${mod},module_x}_mark
+		echo -n "mo : module                                    = "; EvaluateVar {${mod},module_x}_module
 		echo    "xx : Delete this module"
 		EndMenu
 
@@ -449,9 +463,13 @@ ModuleMenu () {
 		elif [[ "$key" == in* ]]; then eval ${mod}_inactivity="$value"
 		elif [[ "$key" == rx* ]]; then eval ${mod}_rx_frequency="$value"
 		elif [[ "$key" == ra* ]]; then eval ${mod}_range="$value"
+		elif [[ "$key" == ty* ]]; then eval ${mod}_type="$value"
+		elif [[ "$key" == ma* ]]; then eval ${mod}_mark="$value"
+		elif [[ "$key" == mo* ]]; then eval ${mod}_module="$value"
 		elif [[ "$key" == xx* ]]; then
 			unset ${mod}_{link_at_start,callsign,offset,range,agl,ip,port}
 			unset ${mod}_{inactivity,packet_wait,acknowledge,ack_delay,auto_link}
+			unset ${mod}_{type,mark,module}
 			unset ${mod}
 			return
 		elif [[ "$key" == u* ]]; then
@@ -466,6 +484,9 @@ ModuleMenu () {
 			elif [[ "$value" == rx* ]]; then unset ${mod}_rx_frequency
 			elif [[ "$value" == pw* ]]; then unset ${mod}_packet_wait
 			elif [[ "$value" == ra* ]]; then unset ${mod}_range
+			elif [[ "$value" == ty* ]]; then unset ${mod}_type
+			elif [[ "$value" == ma* ]]; then unset ${mod}_mark
+			elif [[ "$value" == mo* ]]; then unset ${mod}_module
 			fi
 		fi
 	done
@@ -507,9 +528,13 @@ WriteCFGFile () {
 			q=${p}_acknowledge;    [ -z ${!q+x} ] || echo "${q}=${!q}"   >> $outFile
 			q=${p}_ack_delay;      [ -z ${!q+x} ] || echo "${q}=${!q}"   >> $outFile
 			q=${p}_frequency;      [ -z ${!q+x} ] || echo "${q}=${!q}"   >> $outFile
+			q=${p}_type;           [ -z ${!q+x} ] || echo "${q}=${!q}"   >> $outFile
+			q=${p}_mark;           [ -z ${!q+x} ] || echo "${q}=${!q}"   >> $outFile
+			q=${p}_module;         [ -z ${!q+x} ] || echo "${q}=${!q}"   >> $outFile
 		fi
 	done
 	# icom stack section
+	[ -z "${icom_use_rp2c+x}"    ] || echo "icom_use_rp2c=${icom_internal_ip}"    >> $outFile
 	[ -z "${icom_internal_ip+x}" ] || echo "icom_internal_ip=${icom_internal_ip}" >> $outFile
 	[ -z "${icom_external_ip+x}" ] || echo "icom_external_ip=${icom_external_ip}" >> $outFile
 	[ -z "${icom_port+x}"        ] || echo "icom_port=${icom_port}"               >> $outFile
@@ -601,37 +626,40 @@ while [[ "$ans" != q* ]]
 do
 	clear
 	echo
-	echo "           IcomGateway Config Main Menu V#20202"
+	echo "           IcomGateway Config Main Menu V#50305"
 	echo
-	echo -n "a : Module A                - "; if [ -z $module_a ]; then echo "<EMPTY>"; else echo "${module_a^^}"; fi
-	echo -n "b : Module B                - "; if [ -z $module_b ]; then echo "<EMPTY>"; else echo "${module_b^^}"; fi
-	echo -n "c : Module C                - "; if [ -z $module_c ]; then echo "<EMPTY>"; else echo "${module_c^^}"; fi
-	echo    "i : IRCDDB Menu             - login = '${ircddb_login}'"
-	echo    "g : Gateway/APRS Menu       - location info and route cache"
-	echo    "l : Link/D-Plus Menu        - linking access"
-	echo    "s : Icom Stack Menu         - IP setup"
-	echo    "D : Dashboard Menu          - Dashboard customization"
+	echo    "1 : IRCDDB Menu             - login = '${ircddb_login}'"
+	echo    "2 : Gateway/APRS Menu       - location info and route cache"
+	echo    "3 : Link/D-Plus Menu        - linking access"
 	if [ -n "$em" ]; then
-		echo "d : Debugging/Files/Timings - miscellaneous parameters"
+		echo "4 : Logging/Files/Timings   - miscellaneous parameters"
 	else
-		echo "d : Debugging               - additional log entries"
+		echo "4 : Logging                 - additional log entries"
 	fi
+	echo    "5 : Icom Stack Menu         - Icom Stack Configuration"
+	if [ ! -z "${icom_use_rp2c+x}" ]; then
+		echo -n "a : Module A                - "; if [ -z $module_a ]; then echo "<EMPTY>"; else echo "${module_a^^}"; fi
+		echo -n "b : Module B                - "; if [ -z $module_b ]; then echo "<EMPTY>"; else echo "${module_b^^}"; fi
+		echo -n "c : Module C                - "; if [ -z $module_c ]; then echo "<EMPTY>"; else echo "${module_c^^}"; fi
+	else
+		echo    "    Set Icom Stack Config Menu before module selection"
+	fi
+	echo    "d : Dashboard Menu          - Dashboard customization"
 	echo
 	if [ -n $module_a ] || [ -n $module_b ] || [ -n $module_c ] && [ -n $ircddb_login ]; then
 		echo    "w : Write qn.cfg configuration file (overwrites any existing file)"
 		echo
 	fi
 	read -p "q to quit: " ans
-
-	if   [[ "$ans" == a* ]]; then ModuleMenu a
-	elif [[ "$ans" == b* ]]; then ModuleMenu b
-	elif [[ "$ans" == c* ]]; then ModuleMenu c
-	elif [[ "$ans" == D* ]]; then DashboardMenu
-	elif [[ "$ans" == i* ]]; then IrcddbMenu
-	elif [[ "$ans" == g* ]]; then GateMenu
-	elif [[ "$ans" == l* ]]; then LinkMenu
-	elif [[ "$ans" == d* ]]; then FileMenu
-	elif [[ "$ans" == s* ]]; then IcomStackMenu
+	if   [[ ! -z "${icom_use_rp2c+x}" && "$ans" == a* ]]; then ModuleMenu a
+	elif [[ ! -z "${icom_use_rp2c+x}" && "$ans" == b* ]]; then ModuleMenu b
+	elif [[ ! -z "${icom_use_rp2c+x}" && "$ans" == c* ]]; then ModuleMenu c
+	elif [[ "$ans" == 1* ]]; then IrcddbMenu
+	elif [[ "$ans" == 2* ]]; then GateMenu
+	elif [[ "$ans" == 3* ]]; then LinkMenu
+	elif [[ "$ans" == 4* ]]; then LogMenu
+	elif [[ "$ans" == 5* ]]; then IcomStackMenu
+	elif [[ "$ans" == d* ]]; then DashboardMenu
 	elif [[ "$ans" == w* ]]; then WriteCFGFile
 	fi
 done
