@@ -534,7 +534,7 @@ WriteCFGFile () {
 		fi
 	done
 	# icom stack section
-	[ -z "${icom_use_rp2c+x}"    ] || echo "icom_use_rp2c=${icom_internal_ip}"    >> $outFile
+	[ -z "${icom_use_rp2c+x}"    ] || echo "icom_use_rp2c=${icom_use_rp2c}"       >> $outFile
 	[ -z "${icom_internal_ip+x}" ] || echo "icom_internal_ip=${icom_internal_ip}" >> $outFile
 	[ -z "${icom_external_ip+x}" ] || echo "icom_external_ip=${icom_external_ip}" >> $outFile
 	[ -z "${icom_port+x}"        ] || echo "icom_port=${icom_port}"               >> $outFile

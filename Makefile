@@ -47,7 +47,7 @@ qngateway : QnetGateway.o Base.o aprs.o UnixDgramSocket.o TCPReaderWriterClient.
 qnlink : QnetLink.o Base.o DPlusAuthenticator.o TCPReaderWriterClient.o UnixDgramSocket.o UDPSocket.o QnetConfigure.o QnetDB.o
 	g++ -o $@ $^ $(LDFLAGS) -l sqlite3 -pthread
 
-qnistack : QnetIcomStack.o Base.o UnixDgramSocket.o QnetConfigure.o
+qnistack : QnetIcomStack.o Base.o UnixDgramSocket.o QnetConfigure.o TypeMarkModule.o
 	g++ -o $@ $^ $(LDFLAGS)
 
 qnremote : QnetRemote.o UnixDgramSocket.o QnetConfigure.o

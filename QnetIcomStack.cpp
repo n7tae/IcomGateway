@@ -181,6 +181,14 @@ void CQnetIcomStack::Run()
 					dsvt.config = (58 == len) ? 0x10u : 0x20u;
 					memset(dsvt.flaga, 0, 3);
 					dsvt.id = 0x20;
+					if (not TyMaMo.IsEqual(dstr.vpkt.hdr.r2[7], dstr.vpkt.flagb))
+					{
+						char m = dstr.vpkt.hdr.r2[7];
+						uint8_t tmm[3];
+						TyMaMo.SetFlagb(m, tmm);
+						fprintf(stderr, "Incoming type/mark/module on Module %c, %u/%u/%u, doesn't match configured values, %u/%u/%u!. Resetting...", m, dstr.vpkt.flagb[0], dstr.vpkt.flagb[1], dstr.vpkt.flagb[2], tmm[0], tmm[1], tmm[2]);
+						TyMaMo.LoadFlagb(m, dstr.vpkt.flagb);
+					}
 					memcpy(dsvt.flagb, dstr.vpkt.flagb, 3);
 					dsvt.streamid = dstr.vpkt.streamid;
 					dsvt.ctrl = dstr.vpkt.ctrl;
@@ -194,6 +202,7 @@ void CQnetIcomStack::Run()
 						memcpy(dsvt.hdr.rpt1, dstr.vpkt.hdr.r2, 8);		// reverse order...
 						memcpy(dsvt.hdr.rpt2, dstr.vpkt.hdr.r1, 8);		// to make it right for the gateway
 						memcpy(dsvt.hdr.urcall, dstr.vpkt.hdr.ur, 22);	// ur, my, nm, pfcs 8+8+4+2==22
+						crc.calc(dsvt.title, 56);
 						Icom2Gate.Write(dsvt.title, 56);
 
 					}
@@ -263,9 +272,14 @@ void CQnetIcomStack::Run()
 				dstr.flag[2] = 0x00u;
 				dstr.remaining = (56 == len) ? 48 : 19;
 				dstr.vpkt.icm_id = 0x20u;
+				char module = 'A' + dstr.vpkt.flagb[2];
+				if ('C' < module)
+					module = 'A';
+				TyMaMo.SetFlagb(module, dstr.vpkt.flagb);
 				if (56 == len)
 				{
-					memcpy(dstr.vpkt.flagb, dsvt.flagb, 47);
+					memcpy(&dstr.vpkt.streamid, &dsvt.streamid, 44);
+					crc.calc(dstr.title, 58);
 					SendToIcom(dstr.title, 58);
 					if (LOG_QSO)
 					{
@@ -274,7 +288,7 @@ void CQnetIcomStack::Run()
 				}
 				else
 				{
-					memcpy(dstr.vpkt.flagb, dsvt.flagb, 18);
+					memcpy(&dstr.vpkt.streamid, &dsvt.streamid, 15);
 					SendToIcom(dstr.title, 29);
 					if (LOG_QSO && (dstr.vpkt.ctrl & 0x40u))
 					{

@@ -29,6 +29,7 @@
 #include "DStarDecode.h"
 #include "Base.h"
 #include "Location.h"
+#include "CRC.h"
 
 #define MAXHOSTNAMELEN 64
 #define CALL_SIZE 8
@@ -154,6 +155,9 @@ private:
 	// for parsign GPS slow data
 	CLocation gps;
 
+	//for CRC
+	CCRC crc;
+
 	// text coming from local repeater bands
 	SBANDTXT band_txt[3]; // 0=A, 1=B, 2=C
 
@@ -179,7 +183,6 @@ private:
 
 	bool VoicePacketIsSync(const unsigned char *text) const;
 	int open_port(const SPORTIP *pip, int family);
-	void calcPFCS(unsigned char *packet, int len);
 	void GetIRCDataThread(const int i);
 	int get_yrcall_rptr_from_cache(const int i, const std::string &call, std::string &rptr, std::string &gate, std::string &addr, char RoU);
 	int get_yrcall_rptr(const std::string &call, std::string &rptr, std::string &gate, std::string &addr, char RoU);

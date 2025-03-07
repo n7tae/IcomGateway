@@ -21,10 +21,12 @@
 #include <atomic>
 #include <string>
 #include <netinet/in.h>
+
 #include "SockAddress.h"
 #include "Base.h"
-
 #include "UnixDgramSocket.h"
+#include "TypeMarkModule.h"
+#include "CRC.h"
 
 #define CALL_SIZE 8
 #define IP_SIZE 15
@@ -44,12 +46,18 @@ private:
 	void SendToIcom(const unsigned char *buf, const int size) const;
 	void IcomInit();
 
+	// CRC
+	CCRC crc;
+
 	// read configuration file
 	bool ReadConfig(const char *);
 
 	// Unix sockets
 	CUnixDgramReader Gate2Icom;
 	CUnixDgramWriter Icom2Gate;
+
+	// Ty Ma Mo
+	CTypeMarkModule TyMaMo;
 
 	// config data
 	std::string LOCAL_IP, REPEATER_IP;
