@@ -37,7 +37,7 @@
 #include "QnetTypeDefs.h"
 #include "QnetConfigure.h"
 
-#define RELAY_VERSION "40301"
+#define RELAY_VERSION "40309"
 
 CQnetIcomStack::CQnetIcomStack() : G2_COUNTER_OUT(0)
 {
