@@ -217,10 +217,6 @@ void CQnetIcomStack::Run()
 						Icom2Gate.Write(dsvt.title, 27);
 					}
 				}
-				else if (26 == len)
-				{
-					// printf("SPKT: my=%.8s rpt=%.8s\n", dstr.spkt.mycall, dstr.spkt.rpt);
-				}
 				else if ((10 == len) && (0x72u == dstr.flag[0]))
 				{
 					NEW_REPLY_SEQ = ntohs(dstr.counter);

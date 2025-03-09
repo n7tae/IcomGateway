@@ -1294,7 +1294,6 @@ void CQnetGateway::ProcessIcom(const ssize_t recvlen, SDSVT &dsvt)
 	{
 		if ( (recvlen==56 || recvlen==27) && dsvt.id==0x20U && (dsvt.config==0x10U || dsvt.config==0x20U) )
 		{
-			dsvt.flagb[0] = 0;
 			if (recvlen == 56)
 			{
 				if (LOG_QSO)
