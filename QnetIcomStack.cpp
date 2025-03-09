@@ -181,12 +181,13 @@ void CQnetIcomStack::Run()
 					dsvt.config = (58 == len) ? 0x10u : 0x20u;
 					memset(dsvt.flaga, 0, 3);
 					dsvt.id = 0x20;
-					if (not TyMaMo.IsEqual(dstr.vpkt.hdr.r2[7], dstr.vpkt.flagb))
+					if (not TyMaMo.IsEqual(char(dstr.vpkt.hdr.r2[7]), dstr.vpkt.flagb))
 					{
 						char m = dstr.vpkt.hdr.r2[7];
 						uint8_t tmm[3];
 						TyMaMo.SetFlagb(m, tmm);
-						fprintf(stderr, "Incoming type/mark/module on Module %c, %u/%u/%u, doesn't match configured values, %u/%u/%u!. Resetting...", m, dstr.vpkt.flagb[0], dstr.vpkt.flagb[1], dstr.vpkt.flagb[2], tmm[0], tmm[1], tmm[2]);
+						if (58 == len)
+							fprintf(stderr, "Incoming type/mark/module on Module %c, %u/%u/%u, doesn't match configured values, %u/%u/%u!. Resetting...\n", m, dstr.vpkt.flagb[0], dstr.vpkt.flagb[1], dstr.vpkt.flagb[2], tmm[0], tmm[1], tmm[2]);
 						TyMaMo.LoadFlagb(m, dstr.vpkt.flagb);
 					}
 					memcpy(dsvt.flagb, dstr.vpkt.flagb, 3);
@@ -346,14 +347,20 @@ bool CQnetIcomStack::ReadConfig(const char *cfgFile)
 		test.append(1, 'a'+i);
 		if (cfg.KeyExists(test))
 		{
+			char Mod = 'A' + i;
 			cfg.GetValue(test, estr, type, 1, 16);
 			if (type.compare("icom"))
 			{
 				fprintf(stderr, "Found an incompatible module, '%s', aborting!\n", type.c_str());
 				return true;
 			}
-			available_module = i;
-			break;
+			int val;
+			cfg.GetValue(test+"_type",test, val, 0, 2);
+			TyMaMo.SetType(Mod, uint8_t(val));
+			cfg.GetValue(test+"_mark",test, val, 0, 2);
+			TyMaMo.SetMark(Mod, uint8_t(val));
+			cfg.GetValue(test+"_module",test, val, 0, 2);
+			TyMaMo.SetModule(Mod, uint8_t(val));
 		}
 	}
 

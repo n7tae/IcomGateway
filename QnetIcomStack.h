@@ -65,7 +65,6 @@ private:
 	bool LOG_QSO;
 
 	// parameters
-	int available_module;
 	int icom_fd, gateway_fd;
 	CSockAddress icom_sock;
 	CSockAddress icom_stack;
