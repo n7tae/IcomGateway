@@ -1,17 +1,31 @@
-IcomGateway started as g2_ircddb written by Scott Lawson, KI4LKF.
+IcomGateway has been a pet project for me and my "partner in crime", Colby W1BSB.
+Colby has been there with me from the earliest work on QnetIcomGateway, gaining
+access to hardware (neither of us has a Ham budget to purchase Icom D-Star
+repeater stacks) and basically getting things to work. None of this development
+would get done without Colby.
 
-IcomGateway uses IRCDDB software written by Michael Dirska, DL1BFF. Both Scott and
+IcomGateway started as g2_ircddb written by Scott, KI4LKF. Scott did a lot of the
+early development of IcomGateway by reverse engineering of Icom repeater hardware.
+Along with Will W4WWM and Jonathan G4KLX, they laid the groundwork for open-source
+digital voice.
+
+IcomGateway uses IRCDDB software written by Michael DL1BFF. Both Scott and
 Michael published their code under version 2 of the GNU General Public License. The
 current form of IcomGateway would be completely impossible without Scott and
 Michael's contribution. Thank you for a great starting point of this current
 project!
 
-Some parts of some IcomGateway programs are also inspired by ircDDBGateway,
-DStarRepeater and MMDVMHost by Jonathan Naylor G4KLX, and his copyright appears in
-those files that used his ideas and in some cases, use his source code.
+Some parts of some IcomGateway programs are also inspired by ircDDBGateway, and
+MMDVMHost by Jonathan G4KLX, and his copyright appears in those files that used
+his ideas and in some cases, use his source code.
+
+The latest on-going work would not be possible without access to Icom hardware.
+We gratefully acknowledge both Nick KF5CJG and Mike KK4MA who patiently tested
+software on and gave us access to their Icom Repeaters.
 
 IcomGateway continues to be published under Version 2 of the GNU General Public
 License, see the LICENSE file.
 
 Tom
+
 n7tae (at) arrl (dot) net

@@ -1,7 +1,7 @@
 IcomGateway
 ===========
 
-The IcomGateway is an D-Star IRCDDB gateway application that supports some Icom repeater hardware. John Hays, K7VE, has recently reported that IcomGateway is compatible with the latest, 3rd generation Icom repeater hardware. IcomGateway does not support the 23cm data-only module.
+The IcomGateway is an D-Star IRCDDB gateway application that supports some Icom repeater hardware. IcomGateway support the latest generation of hardware, with or without a separate Icom controller. IcomGateway does not support the 23cm data-only module.
 
 IcomGateway is dual-stack capable. This means it can simultaneously connect to ircv4.openquad.net, which is IPv4 based (using 32-bit internet addresses) and to ircv6.openquad.net which is IPv6 based (using 128-bit internet address). If your hot-spot/reapeater has IPv6 access you can enable dual-stack operation (it's IPv4-only by default) and then take advantage of direct world-routable address. The potential benefit of IPv6 to routing is significant.
 
