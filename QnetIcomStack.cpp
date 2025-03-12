@@ -181,20 +181,20 @@ void CQnetIcomStack::Run()
 					dsvt.config = (58 == len) ? 0x10u : 0x20u;
 					memset(dsvt.flaga, 0, 3);
 					dsvt.id = 0x20;
-					if (not TyMaMo.IsEqual(char(dstr.vpkt.hdr.r2[7]), dstr.vpkt.flagb))
-					{
-						char m = dstr.vpkt.hdr.r2[7];
-						uint8_t tmm[3];
-						TyMaMo.SetFlagb(m, tmm);
-						if (58 == len)
-							fprintf(stderr, "Incoming type/mark/module on Module %c, %u/%u/%u, doesn't match configured values, %u/%u/%u!. Resetting...\n", m, dstr.vpkt.flagb[0], dstr.vpkt.flagb[1], dstr.vpkt.flagb[2], tmm[0], tmm[1], tmm[2]);
-						TyMaMo.LoadFlagb(m, dstr.vpkt.flagb);
-					}
 					memcpy(dsvt.flagb, dstr.vpkt.flagb, 3);
 					dsvt.streamid = dstr.vpkt.streamid;
 					dsvt.ctrl = dstr.vpkt.ctrl;
 					if (58 == len)
 					{
+						char m = dstr.vpkt.hdr.r2[7];
+						if (not TyMaMo.IsEqual(m, dstr.vpkt.flagb))
+						{
+							uint8_t tmm[3];
+							if (TyMaMo.SetFlagb(m, tmm))
+								fprintf(stderr, "Can't retrieve type/mark/module values for module '%c'!\n", m);
+							else
+								fprintf(stderr, "Incoming type/mark/module on Module %c, %u/%u/%u, doesn't match configured values, %u/%u/%u!\n", m, dstr.vpkt.flagb[0], dstr.vpkt.flagb[1], dstr.vpkt.flagb[2], tmm[0], tmm[1], tmm[2]);
+						}
 						if (LOG_QSO)
 						{
 							printf("id=%04x from RPTR count=%u f=%02x%02x%02x icmid=%02x%02x%02x%02x flag=%02x%02x%02x ur=%.8s r1=%.8s r2=%.8s my=%.8s/%.4s\n", ntohs(dstr.vpkt.streamid), ntohs(dstr.counter), dstr.flag[0], dstr.flag[1], dstr.flag[2], dstr.vpkt.icm_id, dstr.vpkt.flagb[0], dstr.vpkt.flagb[1], dstr.vpkt.flagb[2], dstr.vpkt.hdr.flag[0], dstr.vpkt.hdr.flag[1], dstr.vpkt.hdr.flag[2], dstr.vpkt.hdr.ur, dstr.vpkt.hdr.r1, dstr.vpkt.hdr.r2, dstr.vpkt.hdr.my, dstr.vpkt.hdr.nm);
@@ -205,7 +205,6 @@ void CQnetIcomStack::Run()
 						memcpy(dsvt.hdr.urcall, dstr.vpkt.hdr.ur, 22);	// ur, my, nm, pfcs 8+8+4+2==22
 						crc.calc(dsvt.title, 56);
 						Icom2Gate.Write(dsvt.title, 56);
-
 					}
 					else // 29==len or 32==len
 					{
@@ -220,7 +219,8 @@ void CQnetIcomStack::Run()
 				else if ((10 == len) && (0x72u == dstr.flag[0]))
 				{
 					NEW_REPLY_SEQ = ntohs(dstr.counter);
-					if (NEW_REPLY_SEQ == OLD_REPLY_SEQ) {
+					if (NEW_REPLY_SEQ == OLD_REPLY_SEQ)
+					{
 						G2_COUNTER_OUT = NEW_REPLY_SEQ;
 						OLD_REPLY_SEQ = NEW_REPLY_SEQ - 1;
 					} else
@@ -351,11 +351,14 @@ bool CQnetIcomStack::ReadConfig(const char *cfgFile)
 				return true;
 			}
 			int val;
-			cfg.GetValue(test+"_type",test, val, 0, 2);
+			if(cfg.GetValue(test+"_type",test, val, 0, 1))
+				return true;
 			TyMaMo.SetType(Mod, uint8_t(val));
-			cfg.GetValue(test+"_mark",test, val, 0, 2);
+			if(cfg.GetValue(test+"_mark",test, val, 1, 1))
+				return true;
 			TyMaMo.SetMark(Mod, uint8_t(val));
-			cfg.GetValue(test+"_module",test, val, 0, 2);
+			if(cfg.GetValue(test+"_module",test, val, 1, 3))
+				return true;
 			TyMaMo.SetModule(Mod, uint8_t(val));
 		}
 	}

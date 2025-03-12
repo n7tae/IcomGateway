@@ -9,7 +9,6 @@ sudo apt update
 sudo apt upgrade
 sudo apt install make g++ unzip git wget curl
 sudo apt install libsqlite3-dev
-
 ```
 You'll need to copy the repo and then move to the build directory:
 
@@ -17,25 +16,17 @@ You'll need to copy the repo and then move to the build directory:
 git clone git://github.com/n7tae/IcomGateway.git
 cd IcomGateway
 ```
-
 ## Configuration
 
-
-
-
 Create your configuration file, qn.cfg:
-
 ```
 ./config
 ```
-
-This will start a menu driven script. In this mode, only the most common, useful parameters are visible. Some parameters are hidden so ff you want access to absolutely every parameter use:
-
+This will start a menu driven script. In this mode, only the most common, useful parameters are visible. Some parameters are hidden because they very seldom need to be altered. However, if you want access to absolutely every parameter use:
 ```
 ./config expert
 ```
-
-Please be sure you know what you are doing if you change these normally hidden parameters. Most parameters have built-in default values, and will be labeled as `<DEFAULT>`.
+Please be sure you know what you are doing if you change these normally hidden parameters. Most parameters have built-in default values, and will be labeled as `<DEFAULT>` if you have not overridden that value.
 
 There are a few parameters that have to be set and so they do not have a default value. If you need to override the default value, the general method is to type the key for that value followed by the new value. If you want to delete an overridden value, type a "u" followed by the key you want to unset. Boolean values (true or false) can be toggled by just entering the key.
 
@@ -69,13 +60,19 @@ If you want to see what's going on inside the programs, there are logging option
 
 Most importantly in this sub-menu, you will specify if your Icom stack is using the RP2C controller. Once you do that, the main menu will allow you to access to the menus that configure each module A, B and/or C.
 
-Also make sure the local and stack IP addresses are correct. A local address of 0.0.0.0 mean that your system will bind to networks and accept UDP port 20000 traffic from any network. If you need to, you can change this to the specific address at which the computer that IcomGateway is running. A stack address of 172.16.0.1 is the default Icom address. If you system is different, you may need to change this. This is also where you specify if you are using the Icom RP2C controller. In the expert menu, you can also change the port number, but this is NOT recommended. When you exit the Icom menu, you will be able to configure each RF module.
+Make sure the local and stack IP addresses are correct. A local address of 0.0.0.0 mean that your system will bind to networks and accept UDP port 20000 traffic from any network. If you need to, you can change this to the specific address at which the computer that IcomGateway is running. A stack address of 172.16.0.1 is the default Icom address. If you system is different, you may need to change this. This is also where you specify if you are using the Icom RP2C controller. In the expert menu, you can also change the port number, but this is NOT recommended. When you exit the Icom menu, you will be able to configure each RF module.
+
+Most importantly in this sub-menu, you will specify if your Icom stack is using the RP2C controller. Once you do that, the main menu will allow you to access to the menus that configure each module A, B and/or C.
 
 ### Specifying the RF Modules, A, B and/or C
 
 By convention, specify a 23cm module on A, a 70cm module on B and a 2M module on C. IcomGateway supports a maximum of three modules. The 23cm data module is not currently supported.
 
-Please note that when you select modules, you can specify your TX/RX frequencies but that does not actually set the module frequencies. You must set frequencies using your Icom based software. Specifying frequencies here will ensure that your repeater shows up in both the openquad.net gateways list and APRS with the correct information. You will also see three integer settings, Type, Make and Module. These are parameters the Icom stack uses to control routing. Since you have already configure whether or not you have the RP2C controller, these Type/Mark/Module values should be correctly assigned.
+If a module had been created that you don't need, enter the sub-menu for that module and the do `xx`. That will delete the module and return you to the main module.
+
+Please note that when you select modules, you can specify your TX/RX frequencies but that does not actually set the module frequencies. You must set frequencies using your Icom based software. Specifying frequencies here will ensure that your repeater shows up in both the openquad.net gateways list and APRS with the correct information.
+
+You will also see three integer settings, Type, Make and Module. These are parameters the Icom stack uses to control routing. Since you have already configure whether or not you have the RP2C controller, these Type/Mark/Module values should be correctly assigned.
 
 ### Finishing Up the Confguration
 
@@ -84,24 +81,20 @@ After you are happy with your configuration, be sure to write it out with the `w
 ## Administration
 
 Once you have your qn.cfg file, your ready to compile and install your system, type:
-
 ```
 ./admin
 ```
-
 The first thing you want to do is to create your gwys.txt file. use the 'gw' key to get into that sub-menu. There are several choices to initialize your gwys.txt file. Choose one and then you can edit the file to your satisfaction.
 
 If you create a My_Hosts.txt file, it will automatically be appended to the end of your gwys.txt file. Because it is at the end, definitions in My_Hosts.txt will override anything defined before. The format for this file is just like gwys.txt:
-
 ```
 # comments can begin with a hash mark
 # and then: gateway ip_address port
 # choose port for linking family (must be supported by the gateway):
 #   20001 for DPlus 30001 for DExtra 30051 for DCS.
-# Here comes a bogus definition, with the proper format:
+# Here is a bogus definition, with the proper format:
 Q0XYZ 44.44.44.44 20001
 ```
-
 Now, you can compile and install your system with the 'is' key. admin will use your qn.cfg file to figure out what needs to be compiled and how it is to be installed.
 
 If you plan on using DTMF, use the 'id' key to install it. Once you install something, the admin will dynamically change and show you how to uninstall the installed items.
