@@ -209,7 +209,7 @@ bool CQnetDB::UpdateCL(const char *address, const char *callsign, const char typ
 	if (NULL == db)
 		return false;
 	std::stringstream sql;
-	sql << "INSERT OR REPLACE INTO CLIENTS (ip_address, callsign, type, to_mod, link_time) VALUES ('" << address << "', '" << callsign << "', '" << type << "', " << link_time << ");";
+	sql << "INSERT OR REPLACE INTO CLIENTS (ip_address, callsign, type, link_time) VALUES ('" << address << "', '" << callsign << "', '" << type << "', " << link_time << ");";
 
 	char *eMsg;
 	if (SQLITE_OK != sqlite3_exec(db, sql.str().c_str(), NULL, 0, &eMsg))
