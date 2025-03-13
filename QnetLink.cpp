@@ -54,7 +54,7 @@
 #include "QnetLink.h"
 #include "Utilities.h"
 
-#define LINK_VERSION "40301"
+#define LINK_VERSION "50313"
 #ifndef BIN_DIR
 #define BIN_DIR "/usr/local/bin"
 #endif
@@ -166,7 +166,7 @@ void CQnetLink::send_heartbeat()
 		if (inbound->countdown < 0)
 		{
 			printf("call=%s timeout, removing %s, users=%d\n", inbound->call, pos->first.c_str(), (int)inbound_list.size() - 1);
-			qnDB.DeleteLS(pos->first.c_str());
+			qnDB.DeleteCL(pos->first.c_str());
 			delete pos->second;
 			inbound_list.erase(pos);
 		}
@@ -406,7 +406,7 @@ void CQnetLink::RptrAckThread(char *arg)
 	dsvt.hdr.mycall[7] = from_mod;
 
 	memcpy(dsvt.hdr.sfx, "RPTR", 4);
-	calcPFCS(dsvt.title,56);
+	crc.calc(dsvt.title,56);
 	Link2Gate.Write(dsvt.title, 56);
 	//std::this_thread::sleep_for(std::chrono::milliseconds(delay_between))
 
@@ -545,68 +545,6 @@ void CQnetLink::LoadGateways(const std::string &filename)
 			printf("#Gateways %s=%d %s=%d Total=%d\n", filename.c_str(), count, website.c_str(), dplus, qnDB.Count("GATEWAYS"));
 		}
 	}
-}
-
-/* compute checksum */
-void CQnetLink::calcPFCS(unsigned char *packet, int len)
-{
-	unsigned short crc_tabccitt[256] =
-	{
-		0x0000,0x1189,0x2312,0x329b,0x4624,0x57ad,0x6536,0x74bf,0x8c48,0x9dc1,0xaf5a,0xbed3,0xca6c,0xdbe5,0xe97e,0xf8f7,
-		0x1081,0x0108,0x3393,0x221a,0x56a5,0x472c,0x75b7,0x643e,0x9cc9,0x8d40,0xbfdb,0xae52,0xdaed,0xcb64,0xf9ff,0xe876,
-		0x2102,0x308b,0x0210,0x1399,0x6726,0x76af,0x4434,0x55bd,0xad4a,0xbcc3,0x8e58,0x9fd1,0xeb6e,0xfae7,0xc87c,0xd9f5,
-		0x3183,0x200a,0x1291,0x0318,0x77a7,0x662e,0x54b5,0x453c,0xbdcb,0xac42,0x9ed9,0x8f50,0xfbef,0xea66,0xd8fd,0xc974,
-		0x4204,0x538d,0x6116,0x709f,0x0420,0x15a9,0x2732,0x36bb,0xce4c,0xdfc5,0xed5e,0xfcd7,0x8868,0x99e1,0xab7a,0xbaf3,
-		0x5285,0x430c,0x7197,0x601e,0x14a1,0x0528,0x37b3,0x263a,0xdecd,0xcf44,0xfddf,0xec56,0x98e9,0x8960,0xbbfb,0xaa72,
-		0x6306,0x728f,0x4014,0x519d,0x2522,0x34ab,0x0630,0x17b9,0xef4e,0xfec7,0xcc5c,0xddd5,0xa96a,0xb8e3,0x8a78,0x9bf1,
-		0x7387,0x620e,0x5095,0x411c,0x35a3,0x242a,0x16b1,0x0738,0xffcf,0xee46,0xdcdd,0xcd54,0xb9eb,0xa862,0x9af9,0x8b70,
-		0x8408,0x9581,0xa71a,0xb693,0xc22c,0xd3a5,0xe13e,0xf0b7,0x0840,0x19c9,0x2b52,0x3adb,0x4e64,0x5fed,0x6d76,0x7cff,
-		0x9489,0x8500,0xb79b,0xa612,0xd2ad,0xc324,0xf1bf,0xe036,0x18c1,0x0948,0x3bd3,0x2a5a,0x5ee5,0x4f6c,0x7df7,0x6c7e,
-		0xa50a,0xb483,0x8618,0x9791,0xe32e,0xf2a7,0xc03c,0xd1b5,0x2942,0x38cb,0x0a50,0x1bd9,0x6f66,0x7eef,0x4c74,0x5dfd,
-		0xb58b,0xa402,0x9699,0x8710,0xf3af,0xe226,0xd0bd,0xc134,0x39c3,0x284a,0x1ad1,0x0b58,0x7fe7,0x6e6e,0x5cf5,0x4d7c,
-		0xc60c,0xd785,0xe51e,0xf497,0x8028,0x91a1,0xa33a,0xb2b3,0x4a44,0x5bcd,0x6956,0x78df,0x0c60,0x1de9,0x2f72,0x3efb,
-		0xd68d,0xc704,0xf59f,0xe416,0x90a9,0x8120,0xb3bb,0xa232,0x5ac5,0x4b4c,0x79d7,0x685e,0x1ce1,0x0d68,0x3ff3,0x2e7a,
-		0xe70e,0xf687,0xc41c,0xd595,0xa12a,0xb0a3,0x8238,0x93b1,0x6b46,0x7acf,0x4854,0x59dd,0x2d62,0x3ceb,0x0e70,0x1ff9,
-		0xf78f,0xe606,0xd49d,0xc514,0xb1ab,0xa022,0x92b9,0x8330,0x7bc7,0x6a4e,0x58d5,0x495c,0x3de3,0x2c6a,0x1ef1,0x0f78
-	};
-
-	unsigned short crc_dstar_ffff = 0xffff;
-	unsigned short tmp;
-	short int low, high;
-
-	if (len == 56)
-	{
-		low = 15;
-		high = 54;
-	}
-	else if (len == 58)
-	{
-		low = 17;
-		high = 56;
-	}
-	else
-		return;
-
-	for (short int i=low; i<high ; i++)
-	{
-		unsigned short short_c = 0x00ff & (unsigned short)packet[i];
-		tmp = (crc_dstar_ffff & 0x00ff) ^ short_c;
-		crc_dstar_ffff = (crc_dstar_ffff >> 8) ^ crc_tabccitt[tmp];
-	}
-	crc_dstar_ffff =  ~crc_dstar_ffff;
-	tmp = crc_dstar_ffff;
-
-	if (len == 56)
-	{
-		packet[54] = (unsigned char)(crc_dstar_ffff & 0xff);
-		packet[55] = (unsigned char)((tmp >> 8) & 0xff);
-	}
-	else
-	{
-		packet[56] = (unsigned char)(crc_dstar_ffff & 0xff);
-		packet[57] = (unsigned char)((tmp >> 8) & 0xff);
-	}
-	return;
 }
 
 void CQnetLink::ToUpper(std::string &s)
@@ -1283,7 +1221,7 @@ void CQnetLink::ProcessXRF(unsigned char *buf, const int length)
 			/* we must set it to our gateway callsign */
 			memcpy(dsvt.hdr.rpt2, owner.c_str(), CALL_SIZE);
 			dsvt.hdr.rpt2[7] = 'G';
-			calcPFCS(dsvt.title, 56);
+			crc.calc(dsvt.title, 56);
 
 			/* At this point, all data have our RPT1 and RPT2 */
 
@@ -1394,7 +1332,7 @@ void CQnetLink::ProcessXRF(unsigned char *buf, const int length)
 								streamid_raw++;
 							from_xrf_torptr_brd.streamid = htons(streamid_raw);
 
-							calcPFCS(from_xrf_torptr_brd.title, 56);
+							crc.calc(from_xrf_torptr_brd.title, 56);
 
 							/* send the data to the local gateway/repeater */
 							Link2Gate.Write(from_xrf_torptr_brd.title, 56);
@@ -1430,7 +1368,7 @@ void CQnetLink::ProcessXRF(unsigned char *buf, const int length)
 							dsvt.hdr.rpt1[7] = to_remote_g2[i].to_mod;
 							memcpy(dsvt.hdr.rpt2, to_remote_g2[i].cs, CALL_SIZE);
 							dsvt.hdr.rpt2[7] = 'G';
-							calcPFCS(dsvt.title, 56);
+							crc.calc(dsvt.title, 56);
 
 							XRFWrite(dsvt.title, 56, to_remote_g2[i].addr);
 						}
@@ -1462,7 +1400,7 @@ void CQnetLink::ProcessXRF(unsigned char *buf, const int length)
 							rdsvt.dsvt.hdr.rpt2[7] = 'G';
 							memcpy(rdsvt.dsvt.hdr.urcall, "CQCQCQ  ", CALL_SIZE);
 
-							calcPFCS(rdsvt.dsvt.title, 56);
+							crc.calc(rdsvt.dsvt.title, 56);
 
 							REFWrite(rdsvt.head, 58, to_remote_g2[i].addr);
 						}
@@ -1711,7 +1649,7 @@ void CQnetLink::ProcessDCS(unsigned char *dcs_buf, const int length)
 					memcpy(rdsvt.dsvt.hdr.urcall, "CQCQCQ  ", 8);
 					memcpy(rdsvt.dsvt.hdr.mycall, dcs_buf + 31, 8);
 					memcpy(rdsvt.dsvt.hdr.sfx, dcs_buf + 39, 4);
-					calcPFCS(rdsvt.dsvt.title, 56);
+					crc.calc(rdsvt.dsvt.title, 56);
 
 					/* send the header to the local gateway/repeater */
 					for (int j=0; j<5; j++)
@@ -2215,7 +2153,7 @@ void CQnetLink::ProcessREF(unsigned char *buf, const int length)
 		auto pos = inbound_list.find(ip);
 		if (pos != inbound_list.end())
 		{
-			qnDB.DeleteLS(pos->first.c_str());
+			qnDB.DeleteCL(pos->first.c_str());
 			SINBOUND *inbound = pos->second;
 			if (memcmp(inbound->call, "1NFO", 4) != 0)
 				printf("Call %s disconnected\n", inbound->call);
@@ -2423,7 +2361,7 @@ void CQnetLink::ProcessREF(unsigned char *buf, const int length)
 						memcpy(buf+4, "OKAY", 4);
 
 						REFWrite(buf, 8, fromDst4);
-						qnDB.UpdateLS(ip.c_str(), 'p', inbound->call, 'p', time(NULL));
+						qnDB.UpdateCL(ip.c_str(), inbound->call, inbound->client, inbound->mod, time(NULL));
 
 					}
 					else
@@ -2525,7 +2463,7 @@ void CQnetLink::ProcessREF(unsigned char *buf, const int length)
 			/* we must set it to our gateway callsign */
 			memcpy(rdsvt.dsvt.hdr.rpt2, owner.c_str(), CALL_SIZE);
 			rdsvt.dsvt.hdr.rpt2[7] = 'G';
-			calcPFCS(rdsvt.dsvt.title, 56);
+			crc.calc(rdsvt.dsvt.title, 56);
 
 			/* At this point, all data have our RPT1 and RPT2 */
 
@@ -2610,7 +2548,7 @@ void CQnetLink::ProcessREF(unsigned char *buf, const int length)
 							rdsvt.dsvt.hdr.rpt1[7] = to_remote_g2[i].to_mod;
 							memcpy(rdsvt.dsvt.hdr.rpt2, to_remote_g2[i].cs, CALL_SIZE);
 							rdsvt.dsvt.hdr.rpt2[7] = 'G';
-							calcPFCS(rdsvt.dsvt.title, 56);
+							crc.calc(rdsvt.dsvt.title, 56);
 
 							if (to_remote_g2[i].addr.GetPort() == rmt_xrf_port)
 							{
@@ -3121,7 +3059,7 @@ void CQnetLink::Process()
 						memcpy(rdsvt.dsvt.hdr.rpt2, owner.c_str(), CALL_SIZE);
 						rdsvt.dsvt.hdr.rpt2[7] = 'G';
 						memcpy(rdsvt.dsvt.hdr.urcall, "CQCQCQ  ", 8);
-						calcPFCS(rdsvt.dsvt.title, 56);
+						crc.calc(rdsvt.dsvt.title, 56);
 
 						for (auto pos = inbound_list.begin(); pos != inbound_list.end(); pos++)
 						{
@@ -3157,7 +3095,7 @@ void CQnetLink::Process()
 
 									memcpy(fromrptr_torptr_brd.hdr.urcall, "CQCQCQ  ", CALL_SIZE);
 
-									calcPFCS(fromrptr_torptr_brd.title, 56);
+									crc.calc(fromrptr_torptr_brd.title, 56);
 
 									Link2Gate.Write(fromrptr_torptr_brd.title, 56);
 
@@ -3188,13 +3126,13 @@ void CQnetLink::Process()
 									memcpy(rdsvt.dsvt.hdr.rpt2, to_remote_g2[i].cs, strlen(to_remote_g2[i].cs));
 									rdsvt.dsvt.hdr.rpt2[7] = 'G';
 									memcpy(rdsvt.dsvt.hdr.urcall, "CQCQCQ  ", CALL_SIZE);
-									calcPFCS(rdsvt.dsvt.title, 56);
+									crc.calc(rdsvt.dsvt.title, 56);
 
 									if (to_remote_g2[i].addr.GetPort() == rmt_xrf_port)
 									{
 										/* inform XRF about the source */
 										rdsvt.dsvt.flagb[2] = to_remote_g2[i].from_mod;
-										calcPFCS(rdsvt.dsvt.title, 56);
+										crc.calc(rdsvt.dsvt.title, 56);
 										for (int j=0; j<5; j++)
 											XRFWrite(rdsvt.dsvt.title, 56, to_remote_g2[i].addr);
 									}
@@ -3471,7 +3409,7 @@ void CQnetLink::PlayAudioNotifyThread(char *msg)
 	memcpy(edata.header.hdr.urcall, "CQCQCQ  ", CALL_SIZE);
 	memcpy(edata.header.hdr.mycall, owner.c_str(), CALL_SIZE);
 	memcpy(edata.header.hdr.sfx, "RPTR", 4);
-	calcPFCS(edata.header.title, 56);
+	crc.calc(edata.header.title, 56);
 
 	try
 	{
@@ -3787,7 +3725,7 @@ void CQnetLink::Shutdown()
 	for (auto pos = inbound_list.begin(); pos != inbound_list.end(); pos++)
 	{
 		SINBOUND *inbound = (SINBOUND *)pos->second;
-		qnDB.DeleteLS(pos->first.c_str());
+		qnDB.DeleteCL(pos->first.c_str());
 		REFWrite(queryCommand, 5, inbound->addr);
 	}
 	inbound_list.clear();

@@ -64,9 +64,9 @@ bool CQnetDB::Init()
 	sql.assign("CREATE TABLE IF NOT EXISTS LINKSTATUS("
 			   "ip_address		TEXT PRIMARY KEY, "
 			   "from_mod		TEXT NOT NULL, "
-			   "to_callsign    TEXT NOT NULL, "
+			   "to_callsign		TEXT NOT NULL, "
 			   "to_mod			TEXT NOT NULL, "
-			   "linked_time	INT NOT NULL"
+			   "linked_time		INT NOT NULL"
 			   ") WITHOUT ROWID;");
 
 	if (SQLITE_OK != sqlite3_exec(db, sql.c_str(), NULL, 0, &eMsg))
@@ -76,10 +76,25 @@ bool CQnetDB::Init()
 		return true;
 	}
 
+	sql.assign("CREATE TABLE IF NOT EXISTS CLIENTS("
+		"ip_address TEXT PRIMARY KEY, "
+		"callsign   TEXT NOT NULL, "
+		"type       TEXT NOT NULL, "
+		"to_mod     TEXT NOT NULL, "
+		"link_time  INT NOT NULL"
+		") WITHOUT ROWID;");
+
+	if (SQLITE_OK != sqlite3_exec(db, sql.c_str(), NULL, 0, &eMsg))
+	{
+		fprintf(stderr, "CQnetDB::Init [%s] error: %s\n", sql.c_str(), eMsg);
+		sqlite3_free(eMsg);
+		return true;
+	}
+
 	sql.assign("CREATE TABLE IF NOT EXISTS GATEWAYS("
-			   "name		TEXT PRIMARY KEY, "
+			   "name    TEXT PRIMARY KEY, "
 			   "address	TEXT NOT NULL, "
-			   "port		INT NOT NULL"
+			   "port    INT NOT NULL"
 			   ") WITHOUT ROWID;");
 
 	if (SQLITE_OK != sqlite3_exec(db, sql.c_str(), NULL, 0, &eMsg))
@@ -190,6 +205,24 @@ bool CQnetDB::UpdateLS(const char *address, const char from_mod, const char *to_
 	return false;
 }
 
+bool CQnetDB::UpdateCL(const char *address, const char *callsign, const char type, const char to_mod, time_t link_time)
+{
+	if (NULL == db)
+		return false;
+	std::stringstream sql;
+	sql << "INSERT OR REPLACE INTO CLIENTS (ip_address, callsign, type, to_mod, link_time) VALUES ('" << address << "', '" << callsign << "', '" << type << "', '" << to_mod << "', " << link_time << ");";
+
+	char *eMsg;
+	if (SQLITE_OK != sqlite3_exec(db, sql.str().c_str(), NULL, 0, &eMsg))
+	{
+		fprintf(stderr, "CQnetDB::UpdateCL [%s] error: %s\n", sql.str().c_str(), eMsg);
+		sqlite3_free(eMsg);
+		return true;
+	}
+
+	return false;
+}
+
 bool CQnetDB::UpdateGW(const char *name, const char *address, unsigned short port)
 {
 	if (NULL == db)
@@ -249,6 +282,24 @@ bool CQnetDB::DeleteLS(const char *address)
 	if (SQLITE_OK != sqlite3_exec(db, sql.str().c_str(), NULL, 0, &eMsg))
 	{
 		fprintf(stderr, "CQnetDB::DeleteLS [%s] error: %s\n", sql.str().c_str(), eMsg);
+		sqlite3_free(eMsg);
+		return true;
+	}
+
+	return false;
+}
+
+bool CQnetDB::DeleteCL(const char *address)
+{
+	if (NULL == db)
+		return false;
+	std::stringstream sql;
+	sql << "DELETE FROM CLIENTS WHERE ip_address=='" << address << "';";
+
+	char *eMsg;
+	if (SQLITE_OK != sqlite3_exec(db, sql.str().c_str(), NULL, 0, &eMsg))
+	{
+		fprintf(stderr, "CQnetDB::DeleteCL [%s] error: %s\n", sql.str().c_str(), eMsg);
 		sqlite3_free(eMsg);
 		return true;
 	}
@@ -359,6 +410,20 @@ void CQnetDB::ClearLH()
 	if (SQLITE_OK != sqlite3_exec(db, "DELETE FROM LHEARD;", NULL, 0, &eMsg))
 	{
 		fprintf(stderr, "CQnetDB::ClearLH error: %s\n", eMsg);
+		sqlite3_free(eMsg);
+	}
+}
+
+void CQnetDB::ClearCL()
+{
+	if (NULL == db)
+		return;
+
+	char *eMsg;
+
+	if (SQLITE_OK != sqlite3_exec(db, "DELETE FROM CLIENTS;", NULL, 0, &eMsg))
+	{
+		fprintf(stderr, "CQnetDB::ClearCL error: %s\n", eMsg);
 		sqlite3_free(eMsg);
 	}
 }

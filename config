@@ -147,6 +147,7 @@ DashboardMenu () {
 		echo "     Don't use spaces, just use commas. Lowercase will be set to uppercase."
 		echo
 		echo "     LH is the Last Heard Section"
+		echo "     CL is the dongle/hot-spot Client Section"
 		echo "     MO is the Modules Section"
 		echo "     SY is the System Section"
 		echo "     IP is the IP Address Section"
@@ -626,7 +627,7 @@ while [[ "$ans" != q* ]]
 do
 	clear
 	echo
-	echo "           IcomGateway Config Main Menu V#50305"
+	echo "           IcomGateway Config Main Menu V#50313"
 	echo
 	echo    "1 : IRCDDB Menu             - login = '${ircddb_login}'"
 	echo    "2 : Gateway/APRS Menu       - location info and route cache"

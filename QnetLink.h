@@ -33,6 +33,7 @@
 #include "Timer.h"
 #include "QnetDB.h"
 #include "Base.h"
+#include "CRC.h"
 
 /*** version number must be x.xx ***/
 #define CALL_SIZE 8
@@ -92,7 +93,6 @@ private:
 	void UnpackCallsigns(const std::string &str, std::set<std::string> &set, const std::string &delimiters = ",");
 	void PrintCallsigns(const std::string &key, const std::set<std::string> &set);
 	void LoadGateways(const std::string &filename);
-	void calcPFCS(unsigned char *packet, int len);
 	bool ReadConfig(const char *);
 	bool srv_open();
 	void srv_close();
@@ -160,6 +160,8 @@ private:
 	// unix sockets to gateway
 	CUnixDgramReader Gate2Link;
 	CUnixDgramWriter Link2Gate;
+
+	CCRC crc;
 
 	struct timeval tv;
 

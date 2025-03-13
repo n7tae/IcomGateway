@@ -140,7 +140,6 @@ foreach($showlist as $section) {
 			break;
 		case 'SY':
 			echo 'System Info:<br>', "\n";
-			$hn = trim(`uname -n`);
 			$kn = trim(`uname -rmo`);
 			$osinfo = file('/etc/os-release', FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
 			foreach ($osinfo as $line) {
@@ -161,8 +160,8 @@ foreach($showlist as $section) {
 			if (file_exists('/opt/vc/bin/vcgencmd'))
 				$cu .= ' ' . str_replace("'", '&deg;', trim(`/opt/vc/bin/vcgencmd measure_temp`));
 			echo '<table cellpadding="1" border="1" style="font-family: monospace">', "\n";
-			echo '<tr><td style="text-align:center">CPU</td><td style="text-align:center">Kernel</td><td style="text-align:center">OS</td><td style="text-align:center">Hostname</td></tr>', "\n";
-			echo '<tr><td style="text-align:center">', $cu, '</td><td style="text-align:center">', $kn, '</td><td style="text-align:center">', $os, '</td><td style="text-align:center">', $hn, '</td></tr></table><br>', "\n";
+			echo '<tr><td style="text-align:center">CPU</td><td style="text-align:center">Kernel</td><td style="text-align:center">OS</td></tr>', "\n";
+			echo '<tr><td style="text-align:center">', $cu, '</td><td style="text-align:center">', $kn, '</td><td style="text-align:center">', $os, '</td></tr></table><br>', "\n";
 			break;
 		case 'LH':
 			echo 'Last Heard:<br><code>', "\n";
@@ -177,6 +176,31 @@ foreach($showlist as $section) {
 					while ($row = $result->FetchArray(SQLITE3_NUM)) {
 						$rstr = MyAndSfxToQrz($row[0], $row[1]).' '.$row[2].'  '.$row[3].'  '.$row[4].'   '.Maidenhead($row[5], $row[6], $row[7]).'     '.SecToString(intval($row[8])).'<br>';
 						echo str_replace('*', ' ', str_replace(' ', '&nbsp;', $rstr)), "\n";
+					}
+					$result->finalize();
+				}
+				$stmnt->close();
+			}
+			$db->Close();
+			echo '</code><br>', "\n";
+			break;
+		case 'CL':
+			echo 'Clients:<br><code>', "\n";
+			$rstr = 'Callsign    Type    Module  Linked Time<br>';
+			//       NOCALL B  Hot-Spot    B     4 hrs 32 min
+			echo str_replace(' ', '&nbsp;', $rstr), "\n";
+			$dbname = $cfgdir.'/qn.db';
+			$db = new SQLite3($dbname, SQLITE3_OPEN_READONLY);
+			//               0       1     2     3
+			$ss = 'SELECT callsign,type,to_mod,strftime("%s","now")-link_time FROM CLIENTS ORDER BY 1';
+			if ($stmnt = $db->prepare($ss)) {
+				if ($result = $stmnt->execute()) {
+					while ($row = $result->FetchArray(SQLITE3_NUM)) {
+						$dtype = 'Hot-Spot';
+						if ($row[1] === 'D') $dtype = ' Dongle ';
+						if ($row[1] === 'A') $dtype = '  DVAP  ';
+						$rstr = $row[0].'  '.$Ddtype.'      '.$row[2].'     '.SecToString(intval($row[3])).'<br>';
+						echo str_replace(' ', '&nbsp;', $rstr), "\n";
 					}
 					$result->finalize();
 				}
@@ -277,6 +301,6 @@ foreach($showlist as $section) {
 }
 ?>
 <br>
-<p align="right">QnetGateway Dashboard Version 10208 Copyright &copy; by Thomas A. Early, N7TAE.</p>
+<p>QnetGateway Dashboard Version 50313 Copyright &copy; by Thomas A. Early, N7TAE.</p>
 </body>
 </html>
