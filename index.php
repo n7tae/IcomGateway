@@ -199,7 +199,7 @@ foreach($showlist as $section) {
 						$dtype = 'Hot-Spot';
 						if ($row[1] === 'D') $dtype = ' Dongle ';
 						if ($row[1] === 'A') $dtype = '  DVAP  ';
-						$rstr = $row[0].'  '.$dtype.'  '.SecToString(intval($row[3])).'<br>';
+						$rstr = $row[0].'  '.$dtype.'  '.SecToString(intval($row[2])).'<br>';
 						echo str_replace(' ', '&nbsp;', $rstr), "\n";
 					}
 					$result->finalize();
