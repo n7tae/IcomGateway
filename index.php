@@ -186,20 +186,20 @@ foreach($showlist as $section) {
 			break;
 		case 'CL':
 			echo 'Clients:<br><code>', "\n";
-			$rstr = 'Callsign    Type    Module  Linked Time<br>';
-			//       NOCALL B  Hot-Spot    B     4 hrs 32 min
+			$rstr = 'Callsign    Type    Linked Time<br>';
+			//       NOCALL B  Hot-Spot  4 hrs 32 min
 			echo str_replace(' ', '&nbsp;', $rstr), "\n";
 			$dbname = $cfgdir.'/qn.db';
 			$db = new SQLite3($dbname, SQLITE3_OPEN_READONLY);
-			//               0       1     2     3
-			$ss = 'SELECT callsign,type,to_mod,strftime("%s","now")-link_time FROM CLIENTS ORDER BY 1';
+			//               0       1     2
+			$ss = 'SELECT callsign,type,strftime("%s","now")-link_time FROM CLIENTS ORDER BY 1';
 			if ($stmnt = $db->prepare($ss)) {
 				if ($result = $stmnt->execute()) {
 					while ($row = $result->FetchArray(SQLITE3_NUM)) {
 						$dtype = 'Hot-Spot';
 						if ($row[1] === 'D') $dtype = ' Dongle ';
 						if ($row[1] === 'A') $dtype = '  DVAP  ';
-						$rstr = $row[0].'  '.$Ddtype.'      '.$row[2].'     '.SecToString(intval($row[3])).'<br>';
+						$rstr = $row[0].'  '.$dtype.'  '.SecToString(intval($row[3])).'<br>';
 						echo str_replace(' ', '&nbsp;', $rstr), "\n";
 					}
 					$result->finalize();

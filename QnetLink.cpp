@@ -2361,7 +2361,7 @@ void CQnetLink::ProcessREF(unsigned char *buf, const int length)
 						memcpy(buf+4, "OKAY", 4);
 
 						REFWrite(buf, 8, fromDst4);
-						qnDB.UpdateCL(ip.c_str(), inbound->call, inbound->client, inbound->mod, time(NULL));
+						qnDB.UpdateCL(ip.c_str(), inbound->call, inbound->client, time(NULL));
 
 					}
 					else

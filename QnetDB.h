@@ -60,7 +60,7 @@ public:
 	bool UpdateMessage(const char *callsign, const char *message);
 	bool UpdatePosition(const char *callsign, const char *maidenhead, double latitude, double longitude);
 	bool UpdateLS(const char *address, const char from_mod, const char *to_callsign, const char to_mod, time_t connect_time);
-	bool UpdateCL(const char *address, const char *callsign, const char type, const char to_mod, time_t link_time);
+	bool UpdateCL(const char *address, const char *callsign, const char type, time_t link_time);
 	bool UpdateGW(CHostQueue &);
 	bool DeleteLS(const char *address);
 	bool DeleteCL(const char *address);

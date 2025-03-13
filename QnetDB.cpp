@@ -80,7 +80,6 @@ bool CQnetDB::Init()
 		"ip_address TEXT PRIMARY KEY, "
 		"callsign   TEXT NOT NULL, "
 		"type       TEXT NOT NULL, "
-		"to_mod     TEXT NOT NULL, "
 		"link_time  INT NOT NULL"
 		") WITHOUT ROWID;");
 
@@ -205,12 +204,12 @@ bool CQnetDB::UpdateLS(const char *address, const char from_mod, const char *to_
 	return false;
 }
 
-bool CQnetDB::UpdateCL(const char *address, const char *callsign, const char type, const char to_mod, time_t link_time)
+bool CQnetDB::UpdateCL(const char *address, const char *callsign, const char type, time_t link_time)
 {
 	if (NULL == db)
 		return false;
 	std::stringstream sql;
-	sql << "INSERT OR REPLACE INTO CLIENTS (ip_address, callsign, type, to_mod, link_time) VALUES ('" << address << "', '" << callsign << "', '" << type << "', '" << to_mod << "', " << link_time << ");";
+	sql << "INSERT OR REPLACE INTO CLIENTS (ip_address, callsign, type, to_mod, link_time) VALUES ('" << address << "', '" << callsign << "', '" << type << "', " << link_time << ");";
 
 	char *eMsg;
 	if (SQLITE_OK != sqlite3_exec(db, sql.str().c_str(), NULL, 0, &eMsg))
