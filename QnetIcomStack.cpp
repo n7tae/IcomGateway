@@ -39,7 +39,7 @@
 
 #define RELAY_VERSION "50309"
 
-CQnetIcomStack::CQnetIcomStack() : G2_COUNTER_OUT(0)
+CQnetIcomStack::CQnetIcomStack() : icom_counter(0)
 {
 }
 
@@ -90,10 +90,8 @@ void CQnetIcomStack::IcomInit()
 		socklen_t addrlen = addr.GetSize();
 		int recvlen = recvfrom(icom_fd, buf, 500, 0, addr.GetPointer(), &addrlen);
 		if (10==recvlen && 0==memcmp(buf, "INIT", 4) && 0x72U==buf[6] && 0x0U==buf[7]) {
-			OLD_REPLY_SEQ = 256u * buf[4] + buf[5];
-			NEW_REPLY_SEQ = OLD_REPLY_SEQ + 1;
-			G2_COUNTER_OUT = NEW_REPLY_SEQ;
-			printf("Detected the Icom controller! Counter=%u\n", G2_COUNTER_OUT);
+			icom_counter = 256u * buf[4] + buf[5];
+			printf("Detected the Icom controller! Counter=%u\n", icom_counter);
 			break;
 		}
 		std::this_thread::sleep_for(std::chrono::milliseconds(100));
@@ -218,13 +216,12 @@ void CQnetIcomStack::Run()
 				}
 				else if ((10 == len) && (0x72u == dstr.flag[0]))
 				{
-					NEW_REPLY_SEQ = ntohs(dstr.counter);
-					if (NEW_REPLY_SEQ == OLD_REPLY_SEQ)
-					{
-						G2_COUNTER_OUT = NEW_REPLY_SEQ;
-						OLD_REPLY_SEQ = NEW_REPLY_SEQ - 1;
-					} else
-						OLD_REPLY_SEQ = NEW_REPLY_SEQ;
+					auto ackn_counter = ntohs(dstr.counter);
+					if (ackn_counter == icom_counter)
+					
+						icom_counter++;
+					else 
+						icom_counter = ackn_counter;
 				}
 				else if (0x73U==dstr.flag[0] && (0x21U==dstr.flag[1] || 0x11U==dstr.flag[1] || 0x0U==dstr.flag[1]))
 				{
@@ -263,7 +260,7 @@ void CQnetIcomStack::Run()
 			{
 				SDSTR dstr;
 				memcpy(dstr.title, "DSTR", 4);
-				dstr.counter = ntohs(G2_COUNTER_OUT++);
+				dstr.counter = ntohs(icom_counter);
 				dstr.flag[0] = 0x73u;
 				dstr.flag[1] = 0x12u;
 				dstr.flag[2] = 0x00u;
