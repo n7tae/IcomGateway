@@ -54,7 +54,7 @@
 #define CFG_DIR "/usr/local/etc"
 #endif
 
-const std::string GW_VERSION("50301");
+const std::string GW_VERSION("60707");
 
 int CQnetGateway::FindIndex(const int i) const
 {
@@ -647,7 +647,7 @@ bool CQnetGateway::ProcessG2Msg(const unsigned char *data, const int mod, std::s
 					if (smrtgrp.size() < 8)
 					{
 						// something bad happened
-						smrtgrp.empty();
+						smrtgrp.clear();
 						return false;
 					}
 					return true;
@@ -2482,9 +2482,6 @@ bool CQnetGateway::Init(char *cfgfile)
 {
 	short int i;
 
-	setvbuf(stdout, (char *)NULL, _IOLBF, 0);
-
-
 	/* Used to validate MYCALL input */
 	preg = std::regex("^[A-PR-Z0-9]{1}[A-Z0-9]{0,1}[0-9]{1,2}[A-Z]{1,4} {0,4}[ A-Z]{1}$", std::regex::extended);
 
@@ -2762,6 +2759,7 @@ CQnetGateway::~CQnetGateway()
 
 int main(int argc, char **argv)
 {
+	setlinebuf(stdout);
 	printf("VERSION %s\n", GW_VERSION.c_str());
 	if (argc != 2)
 	{

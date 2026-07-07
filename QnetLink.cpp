@@ -54,7 +54,7 @@
 #include "QnetLink.h"
 #include "Utilities.h"
 
-#define LINK_VERSION "50313"
+#define LINK_VERSION "60707"
 #ifndef BIN_DIR
 #define BIN_DIR "/usr/local/bin"
 #endif
@@ -3594,7 +3594,6 @@ void CQnetLink::AudioNotifyThread(SECHO &edata)
 bool CQnetLink::Init(const char *cfgfile)
 {
 	tzset();
-	setvbuf(stdout, (char *)NULL, _IOLBF, 0);
 	memset(tracing, 0, 3 * sizeof(struct tracing_tag));
 	memset(dtmf_mycall, 0, 3 * (CALL_SIZE+1));
 	memset(old_sid, 0, 6);
@@ -3737,6 +3736,7 @@ void CQnetLink::Shutdown()
 
 int main(int argc, char **argv)
 {
+	setlinebuf(stdout);
 	if (argc != 2)
 	{
 		printf("Usage: %s configuration_file\n", argv[0]);
