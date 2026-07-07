@@ -37,7 +37,7 @@
 #include "QnetTypeDefs.h"
 #include "QnetConfigure.h"
 
-#define RELAY_VERSION "40301"
+#define RELAY_VERSION "60707"
 
 CQnetIcomStack::CQnetIcomStack() : G2_COUNTER_OUT(0)
 {
@@ -355,7 +355,7 @@ bool CQnetIcomStack::ReadConfig(const char *cfgFile)
 
 int main(int argc, const char **argv)
 {
-	setbuf(stdout, NULL);
+	setlinebuf(stdout);
 	if (2 != argc)
 	{
 		fprintf(stderr, "usage: %s path_to_config_file\n", argv[0]);
