@@ -129,7 +129,7 @@ private:
 	std::map<std::string, std::string> dt_lh_list;
 
 	char notify_msg[3][64];
-
+	char mod_and_RADIO_ID[3][22];
 	STOREMOTE to_remote_g2[3];
 
 	// broadcast for data arriving from xrf to local rptr

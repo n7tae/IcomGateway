@@ -599,17 +599,9 @@ void CQnetGateway::ProcessTimeouts()
 				// printf("Closed echotest audio file:[%s]\n", recd[i].file);
 
 				/* START: echotest thread setup */
-				try
-				{
-					std::async(std::launch::async, &CQnetGateway::PlayFileThread, this, std::ref(recd[i]));
-				}
-				catch (const std::exception &e)
-				{
-					printf("Failed to start echotest thread. Exception: %s\n", e.what());
-					// when the echotest thread runs, it deletes the file,
-					// Because the echotest thread did NOT start, we delete the file here
-					unlink(recd[i].file);
-				}
+
+				std::thread t([this, i] { this->PlayFileThread(this->recd[i]); });
+				t.detach();
 				/* END: echotest thread setup */
 			}
 		}
@@ -1665,15 +1657,10 @@ void CQnetGateway::ProcessIcom(const ssize_t recvlen, SDSVT &dsvt)
 							band_txt[i].last_time = 0;
 							band_txt[i].streamID = 0U;  // prevent vm timeout
 							snprintf(vm[i].message, 21, "VOICEMAIL ON MOD %c  ", 'A'+i);
-							try
-							{
-								std::async(std::launch::async, &CQnetGateway::PlayFileThread, this, std::ref(vm[i]));
-							}
-							catch (const std::exception &e)
-							{
-								printf("Failed to start voicemail playback. Exception: %s\n", e.what());
-							}
-						}
+
+							std::thread t([this, i] { this->PlayFileThread(this->vm[i]); });
+							t.detach();
+					}
 						else
 							printf("No voicemail to recall or still recording\n");
 					}
@@ -1957,17 +1944,8 @@ void CQnetGateway::ProcessIcom(const ssize_t recvlen, SDSVT &dsvt)
 							// printf("Closed echotest audio file:[%s]\n", recd[i].file);
 
 							/* we are in echotest mode, so play it back */
-							try
-							{
-								std::async(std::launch::async, &CQnetGateway::PlayFileThread, this, std::ref(recd[i]));
-							}
-							catch (const std::exception &e)
-							{
-								printf("failed to start PlayFileThread. Exception: %s\n", e.what());
-								//   When the echotest thread runs, it deletes the file,
-								//   Because the echotest thread did NOT start, we delete the file here
-								unlink(recd[i].file);
-							}
+							std::thread t([this, i] { this->PlayFileThread(this->recd[i]); });
+							t.detach();
 						}
 						break;
 					}

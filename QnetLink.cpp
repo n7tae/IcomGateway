@@ -326,8 +326,6 @@ void CQnetLink::send_heartbeat()
 
 void CQnetLink::rptr_ack(int i)
 {
-	static char mod_and_RADIO_ID[3][22];
-
 	memset(mod_and_RADIO_ID[i], ' ', 21);
 	mod_and_RADIO_ID[i][21] = '\0';
 
@@ -354,15 +352,9 @@ void CQnetLink::rptr_ack(int i)
 	{
 		memcpy(mod_and_RADIO_ID[i] + 1, "NOT LINKED", 10);
 	}
-	try
-	{
-		std::async(std::launch::async, &CQnetLink::RptrAckThread, this, mod_and_RADIO_ID[i]);
-	}
-	catch (const std::exception &e)
-	{
-		printf("Failed to start RptrAckThread(). Exception: %s\n", e.what());
-	}
-	return;
+
+	std::thread t([this, i] { this->RptrAckThread(this->mod_and_RADIO_ID[i]); });
+	t.detach();
 }
 
 void CQnetLink::RptrAckThread(char *arg)
@@ -3473,15 +3465,8 @@ void CQnetLink::PlayAudioNotifyThread(char *msg)
 	memcpy(edata.header.hdr.sfx, "RPTR", 4);
 	calcPFCS(edata.header.title, 56);
 
-	try
-	{
-		std::async(std::launch::async, &CQnetLink::AudioNotifyThread, this, std::ref(edata));
-	}
-	catch (const std::exception &e)
-	{
-		printf ("Failed to start AudioNotifyThread(). Exception: %s\n", e.what());
-	}
-	return;
+	std::thread t([this, &edata] { this->AudioNotifyThread(edata); });
+	t.detach();
 }
 
 void CQnetLink::AudioNotifyThread(SECHO &edata)
