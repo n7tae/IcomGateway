@@ -2795,7 +2795,7 @@ void CQnetLink::Process()
 		unsigned char buffer[1000];
 		if (keep_running && FD_ISSET(XRFSock4.GetSocket(), &fdset))
 		{
-			socklen_t fromlen = sizeof(struct sockaddr_storage);
+			//socklen_t fromlen = sizeof(struct sockaddr_storage);
 			int length = XRFSock4.Read(buffer, 1000, fromDst4);
 			ProcessXRF(buffer, length);
 			FD_CLR(XRFSock4.GetSocket(), &fdset);
@@ -2803,7 +2803,7 @@ void CQnetLink::Process()
 
 		if (keep_running && FD_ISSET(REFSock4.GetSocket(), &fdset))
 		{
-			socklen_t fromlen = sizeof(struct sockaddr_storage);
+			//socklen_t fromlen = sizeof(struct sockaddr_storage);
 			int length = REFSock4.Read(buffer, 1000, fromDst4);
 			ProcessREF(buffer, length);
 			FD_CLR (REFSock4.GetSocket(), &fdset);
@@ -2811,7 +2811,7 @@ void CQnetLink::Process()
 
 		if (keep_running && FD_ISSET(DCSSock4.GetSocket(), &fdset))
 		{
-			socklen_t fromlen = sizeof(struct sockaddr_storage);
+			//socklen_t fromlen = sizeof(struct sockaddr_storage);
 			int length = DCSSock4.Read(buffer, 1000, fromDst4);
 			ProcessDCS(buffer, length);
 			FD_CLR(DCSSock4.GetSocket(), &fdset);
@@ -2821,7 +2821,7 @@ void CQnetLink::Process()
 		{
 			if (keep_running && FD_ISSET(XRFSock6.GetSocket(), &fdset))
 			{
-				socklen_t fromlen = sizeof(struct sockaddr_storage);
+				//socklen_t fromlen = sizeof(struct sockaddr_storage);
 				int length = XRFSock6.Read(buffer, 1000, fromDst4);
 				ProcessXRF(buffer, length);
 				FD_CLR(XRFSock6.GetSocket(), &fdset);
@@ -2829,7 +2829,7 @@ void CQnetLink::Process()
 
 			if (keep_running && FD_ISSET(REFSock6.GetSocket(), &fdset))
 			{
-				socklen_t fromlen = sizeof(struct sockaddr_storage);
+				//socklen_t fromlen = sizeof(struct sockaddr_storage);
 				int length = REFSock6.Read(buffer, 1000, fromDst4);
 				ProcessREF(buffer, length);
 				FD_CLR (REFSock6.GetSocket(), &fdset);
@@ -2837,7 +2837,7 @@ void CQnetLink::Process()
 
 			if (keep_running && FD_ISSET(DCSSock6.GetSocket(), &fdset))
 			{
-				socklen_t fromlen = sizeof(struct sockaddr_storage);
+				//socklen_t fromlen = sizeof(struct sockaddr_storage);
 				int length = DCSSock6.Read(buffer, 1000, fromDst4);
 				ProcessDCS(buffer, length);
 				FD_CLR(DCSSock6.GetSocket(), &fdset);
